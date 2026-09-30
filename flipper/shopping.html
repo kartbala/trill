@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopping briefing</title>
+<style>
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:#fff; color:#000; }
+  body { font:30px/1.35 -apple-system, "Helvetica Neue", Arial, sans-serif; padding:24px 28px 80px; max-width:1000px; }
+  h1 { font-size:54px; line-height:1.1; margin:0 0 8px; }
+  h2 { font-size:40px; margin:44px 0 6px; border-top:6px solid #000; padding-top:16px; }
+  p { margin:0 0 14px; }
+  .count { font-weight:800; }
+  label { display:flex; gap:20px; align-items:flex-start; padding:14px 0; border-bottom:2px solid #bbb; cursor:pointer; }
+  input[type=checkbox] { flex:0 0 44px; width:44px; height:44px; margin:2px 0 0; accent-color:#000; }
+  label b { display:inline; }
+  label span { display:block; font-size:26px; color:#222; }
+  label:has(input:checked) b { text-decoration:line-through; }
+  .tag { display:inline-block; font-size:22px; font-weight:800; padding:2px 10px; border-radius:8px; border:3px solid #000; margin-left:8px; vertical-align:middle; }
+  .tag.buy { background:#ffd400; }
+  .tag.ask { background:#000; color:#fff; }
+  .tag.later { background:#fff; }
+  a { color:#000; font-weight:800; }
+  .note { background:#000; color:#fff; padding:16px 22px; border-radius:12px; font-weight:700; }
+  button { font:inherit; font-weight:800; border:5px solid #000; border-radius:16px; background:#fff; padding:12px 22px; cursor:pointer; }
+  @media print { button { display:none; } body { font-size:22px; } }
+</style>
+</head>
+<body>
+
+<h1>Shopping briefing</h1>
+<p>Checked Wednesday 30 September, 15:40. For tomorrow's library session, Thursday 13:00 to 16:00.</p>
+<p class="count" id="count"></p>
+<p class="note">One thing is a must: solder. Everything else lets you add the metal limbs tomorrow. Budget: about 8 euros for the must, about 15 euros with the limb wire, about 27 euros if you also need a wire stripper.</p>
+
+<h2>1. First choice: Hubo Kralingen</h2>
+<p>Oudedijk 171. Phone 010 412 5534. Open today until 17:30. Directories list 09:00 as the weekday opening time, so tomorrow morning also works. About 1.6 km east of the library and 2.2 km from home, in a straight line.</p>
+<p class="note">Call before you ride. The prices are from Hubo's website; I could not check the shelf in this shop.</p>
+<div class="list">
+<label><input type="checkbox" data-k="solder"><div><b>Solder: Griffon Print draadsoldeer, 4 m card</b> <span class="tag buy">must</span><span>8.39 euros. Blue card with the word PRINT on it. It is for electronics and has the flux inside, so buy no flux.</span></div></label>
+<label><input type="checkbox" data-k="vd" data-opt><div><b>Limb metal: installatiedraad VD, 1,5 mm², 5 m, black</b><span>4.79 euros. Stripped, it is stiff bare copper. Cut it into eight limbs.</span></div></label>
+<label><input type="checkbox" data-k="lead" data-opt><div><b>Limb leads: luidsprekersnoer 2 x 0,5 mm², red and black, 2 metres</b><span>0.59 euros a metre, so 1.18 euros. Sold off the reel: ask at the counter. Pull the red and black apart for eight thin leads.</span></div></label>
+<label><input type="checkbox" data-k="strip" data-opt><div><b>Wire stripper: Skandia afstriptang kunststof, 175 mm</b><span>12.49 euros. Only if the library has none.</span></div></label>
+<label><input type="checkbox" data-k="tape" data-opt><div><b>Masking tape: afplaktape</b><span>A few euros; I did not check the price. Only if you have none at home.</span></div></label>
+</div>
+
+<h2>2. Backup: Karwei Maashaven</h2>
+<p>Maashaven Zuidzijde 100, south of the river. Phone 010 316 6610. Open until 21:00 on weekdays. About 2.9 km from the library and 3.9 km from home, in a straight line.</p>
+<div class="list">
+<label><input type="checkbox" data-k="ksolder" data-opt><div><b>Solder: Griffon Print harskern 99/1, 0,7 mm</b><span>7.59 euros. Thinner than the Hubo one, which suits small joints even better.</span></div></label>
+</div>
+<p>Karwei sells the same kinds of wire, but I did not check those prices.</p>
+
+<h2>3. What to say</h2>
+<p><b>On the phone:</b> "Hi, do you speak English? Do you have Griffon Print solder for electronics in stock? Soldeertin voor elektronica, met harskern."</p>
+<p><b>In the shop:</b> "Waar ligt het soldeertin voor elektronica?" It is usually next to the soldering irons.</p>
+
+<h2>4. Do not buy</h2>
+<div class="list">
+<p>Solder 3 mm thick, or labelled for water pipes (drinkwater, Resist). It is for plumbing.</p>
+<p>Soldeervloeistof or S-39. That flux eats circuit boards.</p>
+<p>Jumper wires. No shop nearby has them, and tomorrow you cut a Trill cable instead.</p>
+</div>
+
+<h2>5. Not worth the ride</h2>
+<p>Praxis lists electronics solder for home delivery only. Action's website lists no solder at all. MediaMarkt has none.</p>
+<p>Back to the <a href="packing.html">library checklist</a> or the <a href="guide.html">guide</a>.</p>
+
+<p style="margin-top:40px"><button type="button" id="clear">Untick everything</button></p>
+
+<script>
+const boxes = [...document.querySelectorAll('input[type=checkbox]')];
+let state = {};
+try { state = JSON.parse(localStorage.getItem('trill-shopping') || '{}'); } catch (e) {}
+function save() { try { localStorage.setItem('trill-shopping', JSON.stringify(state)); } catch (e) {} }
+function count() {
+  const today = boxes.filter(b => !b.hasAttribute('data-opt'));
+  const done = today.filter(b => b.checked).length;
+  document.getElementById('count').textContent = done + ' of ' + today.length + ' must-buy ticked';
+}
+boxes.forEach(b => {
+  b.checked = !!state[b.dataset.k];
+  b.addEventListener('change', () => { state[b.dataset.k] = b.checked; save(); count(); });
+});
+document.getElementById('clear').addEventListener('click', () => {
+  state = {}; boxes.forEach(b => b.checked = false); save(); count();
+});
+count();
+</script>
+</body>
+</html>
