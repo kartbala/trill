@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Library packing list</title>
+<title>Library checklist</title>
 <style>
   * { box-sizing:border-box; }
   html, body { margin:0; background:#fff; color:#000; }
@@ -20,6 +20,8 @@
   .tag { display:inline-block; font-size:22px; font-weight:800; padding:2px 10px; border-radius:8px; border:3px solid #000; margin-left:8px; vertical-align:middle; }
   .tag.buy { background:#ffd400; }
   .tag.ask { background:#000; color:#fff; }
+  .tag.later { background:#fff; }
+  a { color:#000; font-weight:800; }
   .note { background:#000; color:#fff; padding:16px 22px; border-radius:12px; font-weight:700; }
   button { font:inherit; font-weight:800; border:5px solid #000; border-radius:16px; background:#fff; padding:12px 22px; cursor:pointer; }
   @media print { button { display:none; } body { font-size:22px; } }
@@ -27,60 +29,71 @@
 </head>
 <body>
 
-<h1>Library packing list</h1>
-<p>For the Flipper build. Tick each thing as it goes in the bag. Your ticks are remembered.</p>
+<h1>Library checklist</h1>
+<p>Updated Wednesday 30 September, after the home test. Tick each thing as you go. Your ticks are remembered.</p>
 <p class="count" id="count"></p>
+<p class="note">Today's job: join the Craft to the Flipper and hear the bare gold pads play. The Bar passed the home test, so the Flipper side works and no resistors are needed. The metal limbs are for the next trip.</p>
 
 <h2>1. Bring from home</h2>
 <div class="list">
-<label><input type="checkbox" data-k="flipper"><div><b>Flipper Zero, charged</b><span>The Creature app is already on it.</span></div></label>
+<label><input type="checkbox" data-k="flipper"><div><b>Flipper Zero, charged</b><span>The Creature app is on it and it works.</span></div></label>
 <label><input type="checkbox" data-k="usbc"><div><b>The Flipper's USB-C cable</b><span>For charging, and so Claude can update the app.</span></div></label>
 <label><input type="checkbox" data-k="craft"><div><b>Trill Craft board</b><span>Keep it in its silver bag.</span></div></label>
-<label><input type="checkbox" data-k="strip"><div><b>The six-pin strip that came with the Craft</b><span>It is tiny and easy to lose. Tape it inside the silver bag.</span></div></label>
-<label><input type="checkbox" data-k="bar"><div><b>Trill Bar and its cable</b><span>Needs no soldering, so it can prove the Flipper side works if the Craft does not answer.</span></div></label>
-<label><input type="checkbox" data-k="othertrill"><div><b>Your other Trill sensors and every cable that came with them</b><span>Each cable ends in four pins that fit the Flipper. One of them can stand in for jumper wires.</span></div></label>
-<label><input type="checkbox" data-k="mac"><div><b>MacBook and charger</b><span>The step-by-step guide is on it, and Claude can help from there.</span></div></label>
-<label><input type="checkbox" data-k="phone"><div><b>Phone</b><span>To photograph your joints so Claude can check them.</span></div></label>
+<label><input type="checkbox" data-k="strip"><div><b>The six-pin strip that came with the Craft</b><span>Only used if the library has jumper wires. It is tiny: tape it inside the silver bag.</span></div></label>
+<label><input type="checkbox" data-k="bar"><div><b>Trill Bar and its cable</b><span>Your known-good tester. If the Craft does not answer, plug the Bar in to check the Flipper.</span></div></label>
+<label><input type="checkbox" data-k="othertrill"><div><b>One spare Trill cable: the one from the Square</b><span>Red, black, blue, yellow. If the library has no jumper wires, you cut its plug off and solder it to the Craft. The Hex and its cable stay home: they go back to Bela.</span></div></label>
+<label><input type="checkbox" data-k="putty"><div><b>Masking tape or sticky putty</b><span>Holds the wires or the pin strip still while you solder.</span></div></label>
+<label><input type="checkbox" data-k="scissors"><div><b>Small scissors</b><span>To cut the cable if the library has no wire cutters.</span></div></label>
+<label><input type="checkbox" data-k="mac"><div><b>MacBook and charger</b><span>The guide is on it, and Claude can help from there.</span></div></label>
+<label><input type="checkbox" data-k="phone"><div><b>Phone</b><span>The guide is online too. Also for photographing your joints so Claude can check them.</span></div></label>
+<label><input type="checkbox" data-k="passport" data-opt><div><b>Passport</b><span>Only if you still need to collect your library card. They do not accept a photo of it.</span></div></label>
 </div>
 
-<h2>2. Buy or find before you go</h2>
-<p class="note">You have none of these yet, as far as I can tell. The Kiwi parcel would cover the first item, but I see no shipping notice for it.</p>
+<h2>2. Ask at the library desk first</h2>
+<p>Centrale Bibliotheek, Librijesteeg 4. The Maakcafé walk-in runs Tuesday, Wednesday and Thursday, 13:00 to 16:00. Phone 010 281 6100.</p>
+<p class="note">Ask these before you heat anything. The jumper-wire answer decides which button you press on step 1 of the guide.</p>
 <div class="list">
-<label><input type="checkbox" data-k="jumpers"><div><b>Jumper wires, socket on one end and pin on the other</b> <span class="tag buy">must</span><span>Shop name: "Dupont jumper wires, female-to-male, 20 cm". You need four: yellow, white, red, black. A ribbon of 40 is normal.</span></div></label>
-<label><input type="checkbox" data-k="metal"><div><b>Metal for the limbs</b> <span class="tag buy">must</span><span>Brass rod, bare copper wire, or copper tape. Not steel: solder will not stick to it.</span></div></label>
-<label><input type="checkbox" data-k="wire"><div><b>Thin wire for the limbs</b> <span class="tag buy">must</span><span>Eight pieces, about 20 cm each. Spare jumper wires with the ends cut off work well.</span></div></label>
-<label><input type="checkbox" data-k="putty"><div><b>Sticky putty or masking tape</b> <span class="tag buy">must</span><span>Holds the pin strip still while you solder it.</span></div></label>
-</div>
-
-<h2>3. Ask the library before you travel</h2>
-<p>One phone call or email saves a wasted trip.</p>
-<div class="list">
-<label><input type="checkbox" data-k="iron"><div><b>Soldering iron with a stand</b> <span class="tag ask">ask</span><span>You said they have one. Ask if you need to book it.</span></div></label>
-<label><input type="checkbox" data-k="solder"><div><b>Solder</b> <span class="tag ask">ask</span><span>If they do not supply it, buy a small roll: "rosin-core solder, 0.8 mm".</span></div></label>
-<label><input type="checkbox" data-k="cutters"><div><b>Wire cutters and wire strippers</b> <span class="tag ask">ask</span><span>For cutting the limb wires and baring their ends.</span></div></label>
+<label><input type="checkbox" data-k="iron"><div><b>Soldering iron with a stand</b> <span class="tag ask">ask</span><span>Their website lists no soldering iron, so ask this one first.</span></div></label>
+<label><input type="checkbox" data-k="solder"><div><b>Solder</b> <span class="tag ask">ask</span><span>Thin, with a flux core.</span></div></label>
+<label><input type="checkbox" data-k="stock"><div><b>Jumper wires, socket on one end and pin on the other</b> <span class="tag ask">ask</span><span>Yes: press "I have jumper wires". No: press "No jumper wires: use a Trill cable".</span></div></label>
+<label><input type="checkbox" data-k="cutters"><div><b>Wire cutters and wire strippers</b> <span class="tag ask">ask</span><span>Needed for the cable route: cut the plug off, bare four wire ends.</span></div></label>
 <label><input type="checkbox" data-k="hands"><div><b>A clamp or "helping hands"</b> <span class="tag ask">ask</span><span>Holds the board so both your hands are free.</span></div></label>
 <label><input type="checkbox" data-k="helper"><div><b>Someone to watch your first joint</b> <span class="tag ask">ask</span><span>Five minutes of help at the start is worth an hour alone.</span></div></label>
-<label><input type="checkbox" data-k="stock"><div><b>Do they keep jumper wires?</b> <span class="tag ask">ask</span><span>Many maker spaces do. If yes, section 2 gets shorter.</span></div></label>
 </div>
 
-<h2>4. Nice to have</h2>
+<h2>3. Before you leave the library</h2>
 <div class="list">
-<label><input type="checkbox" data-k="glasses"><div><b>Glasses or safety glasses</b><span>Solder can spit.</span></div></label>
-<label><input type="checkbox" data-k="base"><div><b>A piece of wood or thick card, and double-sided tape</b><span>To mount the limbs so no two pieces of metal touch.</span></div></label>
-<label><input type="checkbox" data-k="box"><div><b>A small box with a lid</b><span>For the strip and wire off-cuts.</span></div></label>
-<label><input type="checkbox" data-k="light"><div><b>Your magnifier or a bright lamp</b><span>The holes are 2.5 mm apart.</span></div></label>
+<label><input type="checkbox" data-k="found"><div><b>Three rising notes when Creature opens</b><span>The Flipper found the Craft.</span></div></label>
+<label><input type="checkbox" data-k="pads"><div><b>A bare gold pad plays a note when touched</b><span>That is today done.</span></div></label>
+<label><input type="checkbox" data-k="photo"><div><b>Photograph the solder joints</b><span>Send the photo to Claude if anything sounds wrong.</span></div></label>
 </div>
 
-<h2>5. For the Pi build</h2>
-<p class="note">The Pi build cannot be finished today: it needs a socket strip and a second memory card that you do not own yet. Bring the spare Pi anyway. If the library has a strip, the five joints can be soldered now.</p>
+<h2>4. For the next trip: the limbs</h2>
+<p>No electronics shop turned up near home or the library, and MediaMarkt has none of this. Jumper wires come by post. A hardware shop may have the metal and the solder: De Jong Gereedschappen, Benthuizerstraat 22, phone 010 466 1837. Call before you ride.</p>
 <div class="list">
-<label><input type="checkbox" data-k="pi2"><div><b>The spare Raspberry Pi Zero W</b><span>The unused one. Leave the mesh Pi at home, plugged in.</span></div></label>
-<label><input type="checkbox" data-k="pisocket"><div><b>Socket strip, single row, 5 holes</b> <span class="tag buy">must</span><span>Shop name: "female pin header, 1 row, 2.54 mm, 5 positions". Gets soldered onto the Pi. Ask the library if they have one; a 6, 8 or 10 hole one works too.</span></div></label>
-<label><input type="checkbox" data-k="pisd"><div><b>A second microSD card, 16 GB or more</b> <span class="tag buy">must</span><span>For the spare Pi. Your one good card is in the mesh Pi. Not needed at the library, only at home afterwards.</span></div></label>
-<label><input type="checkbox" data-k="picable"><div><b>Micro-USB data cable</b> <span class="tag buy">in case</span><span>Only if your ISY cable is busy powering the mesh Pi.</span></div></label>
-<label><input type="checkbox" data-k="phones"><div><b>Headphones</b><span>The Pi plays through the Mac, and it is a library.</span></div></label>
+<label><input type="checkbox" data-k="metal" data-opt><div><b>Metal for the limbs</b> <span class="tag later">later</span><span>Brass rod, bare copper wire, or copper tape. Not steel: solder will not stick to it.</span></div></label>
+<label><input type="checkbox" data-k="wire" data-opt><div><b>Thin wire for the limbs</b> <span class="tag later">later</span><span>Eight pieces, about 20 cm each. Bare copper from an old speaker wire or power cord works.</span></div></label>
+<label><input type="checkbox" data-k="base" data-opt><div><b>A piece of wood or thick card, and double-sided tape</b> <span class="tag later">later</span><span>To mount the limbs so no two pieces of metal touch.</span></div></label>
+<label><input type="checkbox" data-k="jumpers" data-opt><div><b>Jumper wires, socket to pin</b> <span class="tag later">later</span><span>Order online: "Dupont jumper wires, female-to-male, 20 cm". Not needed if you cut a cable today.</span></div></label>
 </div>
-<p>The Pi guide is at <b>~/repos/trill/pi/guide.html</b>.</p>
+
+<h2>5. Nice to have today</h2>
+<div class="list">
+<label><input type="checkbox" data-k="glasses" data-opt><div><b>Glasses or safety glasses</b><span>Solder can spit.</span></div></label>
+<label><input type="checkbox" data-k="box" data-opt><div><b>A small box with a lid</b><span>For the strip and wire off-cuts.</span></div></label>
+<label><input type="checkbox" data-k="light" data-opt><div><b>Your magnifier or a bright lamp</b><span>The holes are 2.5 mm apart.</span></div></label>
+</div>
+
+<h2>6. For the Pi build</h2>
+<p class="note">The Pi build cannot be finished today: it needs a socket strip and a second memory card that you do not own yet. Bring the spare Pi only if you want to ask the library for a strip.</p>
+<div class="list">
+<label><input type="checkbox" data-k="pi2" data-opt><div><b>The spare Raspberry Pi Zero W</b><span>The unused one. Leave the mesh Pi at home, plugged in.</span></div></label>
+<label><input type="checkbox" data-k="pisocket" data-opt><div><b>Socket strip, single row, 5 holes</b> <span class="tag later">later</span><span>Shop name: "female pin header, 1 row, 2.54 mm, 5 positions". Gets soldered onto the Pi. A 6, 8 or 10 hole one works too.</span></div></label>
+<label><input type="checkbox" data-k="pisd" data-opt><div><b>A second microSD card, 16 GB or more</b> <span class="tag later">later</span><span>For the spare Pi. Your one good card is in the mesh Pi.</span></div></label>
+<label><input type="checkbox" data-k="picable" data-opt><div><b>Micro-USB data cable</b> <span class="tag later">later</span><span>Only if your ISY cable is busy powering the mesh Pi.</span></div></label>
+<label><input type="checkbox" data-k="phones" data-opt><div><b>Headphones</b><span>The Pi plays through the Mac, and it is a library.</span></div></label>
+</div>
+<p>Guides: <a href="guide.html">library guide</a>, <a href="bartest.html">Bar home test</a>, <a href="../pi/guide.html">Pi guide</a>.</p>
 
 <p style="margin-top:40px"><button type="button" id="clear">Untick everything</button></p>
 
@@ -90,8 +103,9 @@ let state = {};
 try { state = JSON.parse(localStorage.getItem('trill-packing') || '{}'); } catch (e) {}
 function save() { try { localStorage.setItem('trill-packing', JSON.stringify(state)); } catch (e) {} }
 function count() {
-  const done = boxes.filter(b => b.checked).length;
-  document.getElementById('count').textContent = done + ' of ' + boxes.length + ' ticked';
+  const today = boxes.filter(b => !b.hasAttribute('data-opt'));
+  const done = today.filter(b => b.checked).length;
+  document.getElementById('count').textContent = done + ' of ' + today.length + ' ticked for today';
 }
 boxes.forEach(b => {
   b.checked = !!state[b.dataset.k];
