@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creature player</title>
+<style>
+  :root { --ink:#000; --paper:#fff; --dim:#444; --hot:#ff5a00; --ok:#0a6b2d; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--paper); color:var(--ink); }
+  body { font:30px/1.4 -apple-system, "Helvetica Neue", Arial, sans-serif; padding:0 0 60px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+           padding:16px 28px; border-bottom:6px solid #000; }
+  header h1 { font-size:38px; margin:0; }
+  main { padding:20px 28px 0; max-width:1000px; }
+  button { font:inherit; font-weight:800; cursor:pointer; border:5px solid #000; border-radius:16px;
+           background:#fff; color:#000; padding:14px 24px; }
+  button:focus-visible { outline:6px solid var(--hot); outline-offset:3px; }
+  button:disabled { opacity:.3; cursor:default; }
+  #speak { font-size:26px; padding:10px 18px; }
+  #speak.on { background:#000; color:#fff; }
+  #start { display:block; width:100%; font-size:44px; padding:26px 20px; background:#000; color:#fff; margin:0 0 18px; }
+  #status { border:6px solid #000; border-radius:16px; padding:18px 24px; margin:0 0 18px; }
+  #status h2 { font-size:46px; line-height:1.1; margin:0 0 8px; }
+  #status p { margin:0; }
+  #status.found { background:var(--ok); color:#fff; border-color:var(--ok); }
+  #status.search { background:#000; color:#fff; }
+  #status.wait { background:var(--hot); color:#000; border-color:var(--hot); }
+  .scroll { overflow-x:auto; margin:0 0 18px; }
+  #bars { display:block; min-width:900px; width:900px; height:auto; }
+  .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:0 0 14px; }
+  .row .name { flex:1 1 300px; font-weight:800; }
+  .row .name small { display:block; font-weight:400; font-size:26px; }
+  .row button { font-size:34px; min-width:84px; padding:10px 18px; }
+  .row output { min-width:3.2em; text-align:center; font-weight:800; font-size:34px; }
+  #recal { display:block; width:100%; max-width:760px; text-align:left; margin:0 0 18px; }
+  #recal small { display:block; font-weight:400; font-size:26px; }
+  details { border:5px solid #000; border-radius:16px; padding:14px 20px; margin-top:16px; }
+  summary { font-weight:800; cursor:pointer; }
+  details li { margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Creature player</h1>
+  <button id="speak" type="button">Speak status: off</button>
+</header>
+
+<main>
+  <button id="start" type="button">Start sound</button>
+
+  <div id="status" role="status" aria-live="polite">
+    <h2 id="statusTitle">Press Start sound</h2>
+    <p id="statusText">The Mac makes the sound. The Pi tells it which pad is touched.</p>
+  </div>
+
+  <div class="scroll"><svg id="bars" viewBox="0 0 900 470" role="img" aria-label="Thirty bars, one for each pad on the Craft. A bar grows when its pad is touched."></svg></div>
+
+  <button id="recal" type="button" disabled>Reset the touch sensor<small>Take your hands off the metal first. Use it when notes stick or will not start.</small></button>
+
+  <div class="row">
+    <div class="name">Sensitivity<small>Higher plays with a lighter touch.</small></div>
+    <button type="button" data-ctl="sens" data-d="-1" disabled aria-label="Sensitivity down">&minus;</button>
+    <output id="sens">-</output>
+    <button type="button" data-ctl="sens" data-d="1" disabled aria-label="Sensitivity up">+</button>
+  </div>
+  <div class="row">
+    <div class="name">Metal size<small>Raise it for big pieces of metal.</small></div>
+    <button type="button" data-ctl="size" data-d="-1" disabled aria-label="Metal size down">&minus;</button>
+    <output id="size">-</output>
+    <button type="button" data-ctl="size" data-d="1" disabled aria-label="Metal size up">+</button>
+  </div>
+  <div class="row">
+    <div class="name">Scale<small id="scaleName">Which notes the pads play.</small></div>
+    <button type="button" data-ctl="scale" data-d="-1" disabled aria-label="Previous scale">&larr;</button>
+    <output id="scale">-</output>
+    <button type="button" data-ctl="scale" data-d="1" disabled aria-label="Next scale">&rarr;</button>
+  </div>
+
+  <details>
+    <summary>Test the sound without the Pi</summary>
+    <p>Press Start sound, then press the number keys 1 to 8 on the Mac keyboard. Each key plays one note. If you hear them, the Mac side works.</p>
+  </details>
+  <details>
+    <summary>It says "No Pi yet"</summary>
+    <ol>
+      <li>The cable must be in the Pi's middle socket. The end socket only takes power.</li>
+      <li>Wait one full minute after plugging in. The Pi is slow to wake.</li>
+      <li>If the Mac asks "Allow accessory to connect?", choose Allow.</li>
+      <li>If Chrome asks to use MIDI devices, choose Allow.</li>
+      <li>Still nothing? The cable may be a charging-only cable. Try another.</li>
+    </ol>
+  </details>
+</main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const $ = id => document.getElementById(id);
+
+const SCALES = ['Pentatonic', 'Minor pentatonic', 'Major', 'Harmonic minor', 'Whole tone', 'Chromatic'];
+const NUM = 30;
+const level = new Array(NUM).fill(0);
+const held = new Array(NUM).fill(false);
+let piState = -1;          // -1 no Pi, 0 searching, 1 playing, 2 calibrating
+let lastBeat = 0;
+let sens = null, size = null, scale = null, threshold = 17;
+let outputs = [];
+let midiOK = false;
+let started = false;
+
+/* ---------- bars: two rows of fifteen, like the two edges of the Craft ---------- */
+const BAR_W = 44, PITCH = 58, LEFT = 18, ROW_H = 150;
+function barY(row) { return row === 0 ? 40 : 270; }
+function buildBars() {
+  let s = '';
+  for (let i = 0; i < NUM; i++) {
+    const row = i < 15 ? 0 : 1, col = i % 15, x = LEFT + col * PITCH, y = barY(row);
+    s += `<rect x="${x}" y="${y}" width="${BAR_W}" height="${ROW_H}" fill="#fff" stroke="#000" stroke-width="3"/>
+          <rect id="bar${i}" x="${x}" y="${y + ROW_H}" width="${BAR_W}" height="0" fill="#000"/>
+          <text x="${x + BAR_W / 2}" y="${y + ROW_H + 30}" font-size="24" font-weight="800" text-anchor="middle">${i}</text>`;
+  }
+  for (let row = 0; row < 2; row++) {
+    s += `<path id="thr${row}" d="M8 0 H892" stroke="#ff5a00" stroke-width="5" stroke-dasharray="14 8"/>`;
+  }
+  $('bars').innerHTML = s;
+  drawBars();
+}
+function drawBars() {
+  for (let i = 0; i < NUM; i++) {
+    const row = i < 15 ? 0 : 1, y = barY(row);
+    const h = Math.round(Math.min(1, Math.sqrt(level[i] / 127)) * ROW_H);
+    const bar = $('bar' + i);
+    bar.setAttribute('y', y + ROW_H - h);
+    bar.setAttribute('height', h);
+    bar.setAttribute('fill', held[i] ? '#ff5a00' : '#000');
+  }
+  const th = Math.round(Math.min(1, Math.sqrt(threshold / 127)) * ROW_H);
+  for (let row = 0; row < 2; row++) $('thr' + row).setAttribute('transform', `translate(0 ${barY(row) + ROW_H - th})`);
+}
+
+/* ---------- sound ---------- */
+let audio, master;
+const voices = new Map();
+function ensureAudio() {
+  if (audio) return;
+  audio = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = audio.createDynamicsCompressor();
+  master = audio.createGain();
+  master.gain.value = 0.7;
+  master.connect(comp); comp.connect(audio.destination);
+}
+const freq = n => 440 * Math.pow(2, (n - 69) / 12);
+function noteOn(n, vel) {
+  if (!audio) return;
+  noteOff(n);
+  const t = audio.currentTime, peak = 0.12 + 0.28 * (vel / 127);
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(peak * 0.3, t + 0.7);   // plucked, then it rings while held
+  const a = audio.createOscillator(), b = audio.createOscillator(), bg = audio.createGain();
+  a.type = 'triangle'; a.frequency.value = freq(n);
+  b.type = 'sine'; b.frequency.value = freq(n) * 2; bg.gain.value = 0.25;
+  a.connect(g); b.connect(bg); bg.connect(g); g.connect(master);
+  a.start(t); b.start(t);
+  voices.set(n, { g, a, b });
+}
+function noteOff(n) {
+  const v = voices.get(n);
+  if (!v) return;
+  voices.delete(n);
+  const t = audio.currentTime;
+  v.g.gain.cancelScheduledValues(t);
+  v.g.gain.setValueAtTime(Math.max(v.g.gain.value, 0.0001), t);
+  v.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  v.a.stop(t + 0.4); v.b.stop(t + 0.4);
+}
+function allOff() { [...voices.keys()].forEach(noteOff); held.fill(false); }
+function beep(f, start, dur, vol) {
+  if (!audio) return;
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'square'; o.frequency.value = f; g.gain.value = vol;
+  o.connect(g); g.connect(audio.destination);
+  o.start(audio.currentTime + start); o.stop(audio.currentTime + start + dur);
+}
+// The same sounds the Flipper version makes.
+function chime(kind) {
+  if (kind === 'found') { beep(523.25, 0, .07, .12); beep(659.26, .07, .07, .12); beep(783.99, .14, .11, .12); }
+  if (kind === 'lost') { beep(659.26, 0, .09, .12); beep(440, .09, .14, .12); }
+  if (kind === 'search') beep(330, 0, .035, .06);
+  if (kind === 'hands') beep(660, 0, .06, .1);
+}
+
+/* ---------- status ---------- */
+let speakOn = false;
+try { speakOn = localStorage.getItem('creature-speak') === '1'; } catch (e) {}
+function say(text) {
+  if (!speakOn || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+}
+let shown = '';
+function show(cls, title, text) {
+  const key = cls + title;
+  $('status').className = cls;
+  $('statusTitle').textContent = title;
+  $('statusText').textContent = text;
+  if (key !== shown) { shown = key; say(title + '. ' + text); }
+}
+function refresh() {
+  const live = piState >= 0;
+  document.querySelectorAll('[data-ctl], #recal').forEach(b => { b.disabled = !live; });
+  $('sens').textContent = sens === null ? '-' : sens + 1;
+  $('size').textContent = size === null || size === 0 ? '-' : size;
+  $('scale').textContent = scale === null ? '-' : scale + 1;
+  $('scaleName').textContent = scale === null ? 'Which notes the pads play.' : SCALES[scale] || '';
+  if (!started) return;
+  if (!midiOK) {
+    show('wait', 'This browser cannot hear the Pi', 'Open this page in Google Chrome. Safari has no MIDI. The number keys 1 to 8 still play notes here.');
+  } else if (piState < 0) {
+    show('wait', 'No Pi yet', 'Plug the cable into the Pi’s middle socket and wait one minute.');
+  } else if (piState === 0) {
+    show('search', 'Pi is here. Searching for the Craft.', 'The Pi cannot hear the Craft. Check the four wires.');
+  } else if (piState === 2) {
+    show('wait', 'Hands off', 'Measuring the metal. One second.');
+  } else {
+    show('found', 'Craft found. Touch a pad.', 'Each pad plays its own note.');
+  }
+}
+function setPiState(s) {
+  if (s === piState) return;
+  const was = piState;
+  piState = s;
+  if (s === 1) chime('found');
+  if (s === 0 && was === 1) chime('lost');
+  if (s === 2) chime('hands');
+  if (s < 0) { allOff(); level.fill(0); drawBars(); }
+  refresh();
+}
+
+/* ---------- MIDI in: notes on channel 1, status on channel 16 ---------- */
+function handleMidi(d) {
+  const st = d[0], a = d[1], b = d[2];
+  if (st === 0x90 && b > 0) { noteOn(a, b); return; }
+  if (st === 0x80 || (st === 0x90 && b === 0)) { noteOff(a); return; }
+  if (st === 0xB0 && a === 123) { allOff(); return; }
+  if (st !== 0xAF) return;
+  lastBeat = performance.now();
+  if (a < NUM) { level[a] = b; held[a] = b > threshold * 0.6 && (held[a] || b > threshold); drawBars(); return; }
+  if (a === 127) setPiState(b);
+  else if (a === 126) size = b;
+  else if (a === 125) sens = b;
+  else if (a === 124) scale = b;
+  else if (a === 123) { threshold = b; drawBars(); }
+  refresh();
+}
+function send(cc, value) { outputs.forEach(o => { try { o.send([0xBF, cc, value]); } catch (e) {} }); }
+
+function attach(access) {
+  outputs = [...access.outputs.values()];
+  access.inputs.forEach(input => { input.onmidimessage = e => handleMidi(e.data); });
+  send(24, 0);   // "say your state again"
+}
+async function startMidi() {
+  if (!navigator.requestMIDIAccess) { midiOK = false; refresh(); return; }
+  try {
+    const access = await navigator.requestMIDIAccess();
+    midiOK = true;
+    attach(access);
+    access.onstatechange = () => attach(access);
+  } catch (e) { midiOK = false; }
+  refresh();
+}
+
+// No word from the Pi for three seconds means it is gone. A blip every two
+// seconds means it is alive but still looking for the Craft.
+setInterval(() => {
+  if (!started) return;
+  if (piState >= 0 && performance.now() - lastBeat > 3000) setPiState(-1);
+}, 500);
+setInterval(() => { if (started && piState === 0) chime('search'); }, 2000);
+
+/* ---------- controls ---------- */
+$('start').addEventListener('click', () => {
+  ensureAudio();
+  audio.resume();
+  started = true;
+  $('start').textContent = 'Sound is on';
+  $('start').disabled = true;
+  beep(523.25, 0, .08, .1);
+  refresh();
+  startMidi();
+});
+$('recal').addEventListener('click', () => send(20, 127));
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ctl]');
+  if (!b) return;
+  const d = parseInt(b.dataset.d, 10);
+  if (b.dataset.ctl === 'sens' && sens !== null) send(21, Math.min(7, Math.max(0, sens + d)));
+  if (b.dataset.ctl === 'size' && size) send(22, Math.min(8, Math.max(1, size + d)));
+  if (b.dataset.ctl === 'scale' && scale !== null) send(23, (scale + d + SCALES.length) % SCALES.length);
+});
+$('speak').addEventListener('click', () => {
+  speakOn = !speakOn;
+  try { localStorage.setItem('creature-speak', speakOn ? '1' : '0'); } catch (e) {}
+  $('speak').textContent = 'Speak status: ' + (speakOn ? 'on' : 'off');
+  $('speak').classList.toggle('on', speakOn);
+  if (!speakOn && 'speechSynthesis' in window) speechSynthesis.cancel();
+  else say($('statusTitle').textContent + '. ' + $('statusText').textContent);
+});
+$('speak').textContent = 'Speak status: ' + (speakOn ? 'on' : 'off');
+$('speak').classList.toggle('on', speakOn);
+
+// Number keys 1-8 play the first eight notes, so the sound can be tested alone.
+const KEY_NOTES = [60, 62, 64, 67, 69, 72, 74, 76];
+document.addEventListener('keydown', e => {
+  if (e.repeat || e.metaKey || e.ctrlKey) return;
+  const k = '12345678'.indexOf(e.key);
+  if (k >= 0 && audio) noteOn(KEY_NOTES[k], 100);
+});
+document.addEventListener('keyup', e => {
+  const k = '12345678'.indexOf(e.key);
+  if (k >= 0 && audio) noteOff(KEY_NOTES[k]);
+});
+
+buildBars();
+refresh();
+
+/* ---------- ?demo=found|search|none : pretend a Pi is talking (for checks) ---------- */
+if (params.has('demo')) {
+  started = true; midiOK = true;
+  $('start').textContent = 'Sound is on'; $('start').disabled = true;
+  const kind = params.get('demo');
+  if (kind === 'none') { refresh(); }
+  else {
+    const beat = () => { [[127, kind === 'search' ? 0 : 1], [126, 1], [125, 3], [124, 0], [123, 17]].forEach(m => handleMidi([0xAF, m[0], m[1]])); };
+    beat(); setInterval(beat, 1000);
+    if (kind === 'found') { [[0, 3], [2, 70], [5, 12], [17, 95], [29, 40]].forEach(m => handleMidi([0xAF, m[0], m[1]])); handleMidi([0x90, 64, 100]); }
+  }
+}
+</script>
+</body>
+</html>

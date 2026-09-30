@@ -1,0 +1,12 @@
+App(
+    appid="trill_creature",
+    name="Creature",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="creature_app",
+    stack_size=4 * 1024,
+    requires=["gui", "notification"],
+    fap_category="GPIO",
+    fap_version="0.1",
+    fap_author="kartbala",
+    fap_description="Voice for a Trill Craft touch sculpture: touch a limb, hear a note",
+)

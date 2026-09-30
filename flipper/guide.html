@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Craft to Flipper, step by step</title>
+<style>
+  :root { --ink:#000; --paper:#fff; --dim:#444; --hot:#ff5a00; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--paper); color:var(--ink); }
+  body { font:30px/1.4 -apple-system, "Helvetica Neue", Arial, sans-serif; padding:0 0 150px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+           padding:16px 28px; border-bottom:6px solid #000; }
+  #progress { font-size:30px; font-weight:800; }
+  #dots { display:flex; gap:8px; flex-wrap:wrap; }
+  #dots i { width:22px; height:22px; border-radius:50%; border:4px solid #000; background:#fff; }
+  #dots i.done { background:#000; }
+  #dots i.now { background:var(--hot); border-color:var(--hot); }
+  main { padding:20px 28px 0; max-width:1000px; }
+  h1 { font-size:54px; line-height:1.1; margin:6px 0 16px; }
+  #text p { margin:0 0 12px; }
+  #text p.key { font-weight:800; font-size:34px; }
+  #text p.warn { background:#000; color:#fff; padding:14px 20px; border-radius:12px; font-weight:700; }
+  #text ol, #text ul { margin:0 0 12px; padding-left:40px; }
+  #text li { margin-bottom:8px; }
+  .scroll { overflow-x:auto; margin:18px 0 8px; }
+  #scene svg { display:block; min-width:900px; width:900px; height:auto; }
+  #extra { margin-top:14px; }
+  button { font:inherit; font-weight:800; cursor:pointer; border:5px solid #000; border-radius:16px;
+           background:#fff; color:#000; padding:14px 24px; }
+  button:focus-visible { outline:6px solid var(--hot); outline-offset:3px; }
+  .toggles { display:flex; gap:12px; flex-wrap:wrap; }
+  #speak, #motion { font-size:26px; padding:10px 18px; }
+  #speak.on, #motion.on { background:#000; color:#fff; }
+  .sound { display:block; width:100%; max-width:760px; text-align:left; margin:0 0 14px; font-size:30px; }
+  .sound small { display:block; font-weight:400; font-size:26px; }
+  .route { display:block; width:100%; max-width:760px; text-align:left; margin:0 0 14px; font-size:30px; }
+  .route small { display:block; font-weight:400; font-size:26px; }
+  .route.on { background:#000; color:#fff; }
+  nav { position:fixed; left:0; right:0; bottom:0; display:flex; gap:16px; padding:16px 28px;
+        background:#fff; border-top:6px solid #000; }
+  nav button { flex:1; font-size:38px; padding:20px 10px; }
+  #next { background:#000; color:#fff; }
+  nav button:disabled { opacity:.25; cursor:default; }
+
+  /* scene animation */
+  .pulse { animation:pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.15; } }
+  .bob { animation:bob 1s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(14px); } }
+  .unplug { animation:unplug 3.2s ease-in-out infinite; }
+  @keyframes unplug { 0%,25% { transform:translateX(0); } 60%,100% { transform:translateX(120px); } }
+  .slidein { animation:slidein 3.4s ease-in-out infinite; }
+  @keyframes slidein { 0%,18% { transform:translateX(150px); } 55%,100% { transform:translateX(0); } }
+  .tap { animation:tap 1.6s ease-in-out infinite; }
+  @keyframes tap { 0%,100% { transform:translateY(-46px); } 40%,60% { transform:translateY(0); } }
+  .note { animation:note 1.6s ease-out infinite; }
+  @keyframes note { 0%,40% { opacity:0; transform:translateY(0); } 50% { opacity:1; } 100% { opacity:0; transform:translateY(-90px); } }
+  /* four jumper wires, one after another, on an 8 s loop */
+  .jw { animation:jw1 8s ease-in-out infinite; }
+  .jw.n2 { animation-name:jw2; } .jw.n3 { animation-name:jw3; } .jw.n4 { animation-name:jw4; }
+  @keyframes jw1 { 0%,6%  { transform:translateX(160px); } 16%,100% { transform:translateX(0); } }
+  @keyframes jw2 { 0%,24% { transform:translateX(160px); } 34%,100% { transform:translateX(0); } }
+  @keyframes jw3 { 0%,42% { transform:translateX(160px); } 52%,100% { transform:translateX(0); } }
+  @keyframes jw4 { 0%,60% { transform:translateX(160px); } 70%,100% { transform:translateX(0); } }
+  /* one solder joint, on a 7 s loop */
+  .iron { animation:iron 7s ease-in-out infinite; }
+  @keyframes iron { 0%,6% { transform:translate(-150px,-150px); } 18%,74% { transform:translate(0,0); } 86%,100% { transform:translate(-150px,-150px); } }
+  .solder { animation:solder 7s ease-in-out infinite; }
+  @keyframes solder { 0%,30% { transform:translate(150px,-150px); } 40%,58% { transform:translate(0,0); } 68%,100% { transform:translate(150px,-150px); } }
+  .cone { animation:cone 7s linear infinite; }
+  @keyframes cone { 0%,44% { opacity:0; } 56%,96% { opacity:1; } 100% { opacity:0; } }
+  /* limb wires draw themselves in, one after another */
+  .limb { stroke-dasharray:400; animation:limb 8s ease-in-out infinite; }
+  @keyframes limb { 0% { stroke-dashoffset:400; } 12%,100% { stroke-dashoffset:0; } }
+  .wire { transition:transform .9s cubic-bezier(.3,.7,.3,1); }
+  /* the plug end of a cable, cut off and pushed aside, on a 5 s loop */
+  .cutoff { animation:cutoff 5s ease-in-out infinite; }
+  @keyframes cutoff { 0%,35% { transform:translateX(0); } 65%,100% { transform:translateX(-64px); } }
+
+  .still .pulse, .still .bob, .still .unplug, .still .slidein, .still .tap, .still .note,
+  .still .jw, .still .iron, .still .solder, .still .cone, .still .limb, .still .cutoff { animation:none; }
+  .still .cutoff { transform:translateX(-64px); }
+  /* a finger sliding along the Bar, on a 4 s loop */
+  .slide { animation:slide 4s ease-in-out infinite; }
+  @keyframes slide { 0%,100% { transform:translateX(0); } 50% { transform:translateX(300px); } }
+  .still .slide { animation:none; transform:translateX(150px); }
+  .still .note { opacity:1; transform:translateY(-50px); }
+  .still .limb { stroke-dasharray:none; }
+  .still .wire { transition:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div id="progress"></div>
+  <div id="dots"></div>
+  <div class="toggles">
+    <button id="motion" type="button">Animation: on</button>
+    <button id="speak" type="button">Read aloud: off</button>
+  </div>
+</header>
+
+<main>
+  <h1 id="title"></h1>
+  <div id="text"></div>
+  <div class="scroll"><div id="scene"></div></div>
+  <div id="extra"></div>
+</main>
+
+<nav>
+  <button id="back" type="button">&larr; Back</button>
+  <button id="next" type="button">Next &rarr;</button>
+</nav>
+
+<script>
+const params = new URLSearchParams(location.search);
+// Animation is on unless switched off with the button. This page was asked for
+// with animations, so the system "reduce motion" setting does not silence it.
+let STILL = params.has('still');
+try { if (localStorage.getItem('pinmap-motion') === 'off') STILL = true; } catch (e) {}
+
+const COL = {
+  red:    { fill:'#d40000', name:'RED' },
+  black:  { fill:'#000000', name:'BLACK' },
+  white:  { fill:'#ffffff', name:'WHITE' },
+  yellow: { fill:'#ffd400', name:'YELLOW' },
+  blue:   { fill:'#1e6bff', name:'BLUE' },
+};
+// Two ways to join the Craft to the Flipper:
+//   'jumper' = solder the six-pin strip, then four socket-to-pin jumper wires
+//   'cable'  = no jumper wires: cut the plug off one Trill cable and solder its four wires into the Craft
+//   'bar'    = the two-minute home test: Trill Bar and its own cable, no soldering (?route=bar only)
+// KB's Trill cables are red, black, blue, yellow (no white): blue = data (SDA), yellow = clock (SCL).
+// On the jumper route the data wire is white. The clock wire is yellow on every route.
+let ROUTE = 'jumper';
+try { if (localStorage.getItem('guide-route') === 'cable') ROUTE = 'cable'; } catch (e) {}
+if (['cable', 'jumper', 'bar'].includes(params.get('route'))) ROUTE = params.get('route');
+const SCLC = () => 'yellow';
+const SDAC = () => ROUTE === 'jumper' ? 'white' : 'blue';
+const LIGHT = c => c === 'white' || c === 'yellow';   // needs a black outline on a white page
+// hole index inside the Flipper's group of ten: 0 = pin 9 ... 9 = pin 18
+const HOLE = { red:0, black:2, white:6, blue:6, yellow:7 };
+
+/* ---------- the Craft, drawn from the photo: chip side up, round end left, flat end right ---------- */
+const PADX = n => n <= 14 ? 650 - n * 31 : 216 + (n - 15) * 31;   // pads 0-14 top row, 15-29 bottom row
+const PADY = n => n <= 14 ? 150 : 370;
+const I2C = ['SCL', 'SDA', '+V', 'GND', 'EVT', 'RST'];
+const I2CY = k => 183 + k * 31;
+const I2CX = 705;
+
+function craft(o) {
+  o = o || {};
+  let s = `<path d="M230 120 H730 Q740 120 740 130 V390 Q740 400 730 400 H230 A140 140 0 0 1 230 120 Z" fill="#111" stroke="#000" stroke-width="5"/>`;
+  for (let n = 0; n < 30; n++) {
+    s += `<circle cx="${PADX(n)}" cy="${PADY(n)}" r="11" fill="#d4af37"/><circle cx="${PADX(n)}" cy="${PADY(n)}" r="5" fill="#111"/>`;
+  }
+  for (let k = 0; k < 6; k++) {
+    s += `<circle cx="${I2CX}" cy="${I2CY(k)}" r="11" fill="#d4af37"/><circle cx="${I2CX}" cy="${I2CY(k)}" r="5" fill="#111"/>`;
+  }
+  s += `<circle cx="150" cy="260" r="20" fill="#d4af37"/><circle cx="150" cy="260" r="11" fill="#fff"/>
+        <path d="M440 222 L478 260 L440 298 L402 260 Z" fill="#2b2b2b" stroke="#777" stroke-width="3"/>`;
+  if (o.labels !== false) {
+    s += `<text x="255" y="252" font-size="30" font-weight="800" fill="#fff" text-anchor="middle">TRILL</text>
+          <text x="255" y="282" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">CRAFT</text>
+          <text x="440" y="330" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">chip</text>
+          ${o.noTop ? '' : `<text x="650" y="100" font-size="28" font-weight="800" text-anchor="middle">0</text>
+          <text x="216" y="100" font-size="28" font-weight="800" text-anchor="middle">14</text>`}
+          <text x="216" y="444" font-size="28" font-weight="800" text-anchor="middle">15</text>
+          <text x="650" y="444" font-size="28" font-weight="800" text-anchor="middle">29</text>`;
+  }
+  if (o.i2cLabels) {
+    for (let k = 0; k < 6; k++) {
+      s += `<text x="674" y="${I2CY(k) + 8}" font-size="22" font-weight="800" fill="#fff" text-anchor="end">${I2C[k]}</text>`;
+    }
+  }
+  return s;
+}
+
+// the six-pin right-angle strip, soldered on the flat end, long legs pointing right
+function headerStrip() {
+  let s = '';
+  for (let k = 0; k < 6; k++) s += `<rect x="${I2CX - 4}" y="${I2CY(k) - 4}" width="130" height="8" fill="#b9b9b9" stroke="#000" stroke-width="1.5"/>`;
+  s += `<rect x="746" y="${I2CY(0) - 15}" width="26" height="${31 * 5 + 30}" rx="3" fill="#222" stroke="#000" stroke-width="3"/>`;
+  return s;
+}
+
+// a jumper wire's socket end, pushed onto pin k of the strip
+function jumper(color, k, cls, num) {
+  const c = COL[color].fill, y = I2CY(k);
+  const ink = (color === 'white' || color === 'yellow') ? '#000' : '#fff';
+  const outline = LIGHT(color) ? `<path d="M868 ${y} H1100" stroke="#000" stroke-width="16" fill="none"/>` : '';
+  return `<g class="${cls || ''}">${outline}
+    <path d="M868 ${y} H1100" stroke="${c}" stroke-width="10" fill="none"/>
+    <rect x="786" y="${y - 13}" width="84" height="26" rx="4" fill="${c}" stroke="#000" stroke-width="4"/>
+    ${num ? `<text x="828" y="${y + 8}" font-size="22" font-weight="800" fill="${ink}" text-anchor="middle">${num}</text>` : ''}
+  </g>`;
+}
+
+// a cable wire soldered straight into hole k of the flat end (the no-jumper route)
+function tail(color, k, cls, num) {
+  const c = COL[color].fill, y = I2CY(k);
+  const outline = LIGHT(color) ? `<path d="M${I2CX} ${y} H1100" stroke="#000" stroke-width="16" fill="none"/>` : '';
+  return `<g class="${cls || ''}">${outline}
+    <path d="M${I2CX} ${y} H1100" stroke="${c}" stroke-width="10" fill="none"/>
+    <circle cx="${I2CX}" cy="${y}" r="10" fill="#e6e6e6" stroke="#000" stroke-width="3"/>
+    ${num ? `<circle cx="800" cy="${y}" r="15" fill="#fff" stroke="#000" stroke-width="4"/>
+             <text x="800" y="${y + 8}" font-size="22" font-weight="800" text-anchor="middle">${num}</text>` : ''}
+  </g>`;
+}
+
+// the Craft's link to the Flipper, drawn for whichever route is chosen
+function link(animated) {
+  const cols = [SCLC(), SDAC(), 'red', 'black'];
+  if (ROUTE === 'cable') return cols.map((c, k) => tail(c, k, animated ? 'jw n' + (k + 1) : '', animated ? k + 1 : '')).join('');
+  return headerStrip() + cols.map((c, k) => jumper(c, k, animated ? 'jw n' + (k + 1) : '', animated ? String(k + 1) : '')).join('');
+}
+
+function scenePlan() {
+  const rods = [0, 1, 2, 3, 4, 5, 6, 7].map(n =>
+    `<path class="limb" style="animation-delay:${n * 0.5}s" d="M${PADX(n)} 150 V70" stroke="#c77b00" stroke-width="7" fill="none"/>
+     <rect x="${PADX(n) - 8}" y="14" width="16" height="60" rx="6" fill="#d4af37" stroke="#000" stroke-width="3"/>`).join('');
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="The Craft, four wires going to the Flipper, and eight metal limbs.">
+    ${rods}
+    ${craft({ labels: false })}${link()}
+    <text x="430" y="445" font-size="28" font-weight="800" text-anchor="middle">Craft</text>
+    <text x="760" y="445" font-size="28" font-weight="800" text-anchor="middle">to the Flipper &rarr;</text>
+    <text x="300" y="60" font-size="28" font-weight="800" text-anchor="middle">metal limbs</text>
+  </svg>`;
+}
+
+function sceneHeader() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="The six-pin strip slides into the six holes on the flat end of the Craft.">
+    ${craft({ i2cLabels: true })}
+    <rect class="pulse" x="${I2CX - 18}" y="${I2CY(0) - 20}" width="36" height="${31 * 5 + 40}" rx="12" fill="none" stroke="#ff5a00" stroke-width="6"/>
+    <g class="slidein">${headerStrip()}</g>
+    <text x="800" y="120" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">pin strip</text>
+    <text x="100" y="100" font-size="24" font-weight="800" text-anchor="middle">round end</text>
+    <text x="780" y="444" font-size="24" font-weight="800" text-anchor="middle">flat end</text>
+  </svg>`;
+}
+
+function sceneJoint(what) {
+  what = what || 'leg';
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Side view of one solder joint: iron on the ${what} and ring, then solder, then a shiny cone.">
+    <rect x="80" y="300" width="740" height="46" fill="#123c2a" stroke="#000" stroke-width="4"/>
+    <rect x="430" y="300" width="40" height="46" fill="#fff"/>
+    <rect x="380" y="290" width="50" height="12" fill="#d4af37" stroke="#000" stroke-width="2"/>
+    <rect x="470" y="290" width="50" height="12" fill="#d4af37" stroke="#000" stroke-width="2"/>
+    <rect x="442" y="205" width="16" height="200" fill="#b9b9b9" stroke="#000" stroke-width="2"/>
+    <text x="650" y="332" font-size="24" font-weight="800" fill="#fff" text-anchor="middle">board, back side up</text>
+    <text x="300" y="285" font-size="24" font-weight="800" text-anchor="middle">ring</text>
+    <text x="474" y="226" font-size="24" font-weight="800" text-anchor="start">${what}</text>
+    <path class="cone" d="M384 290 L442 222 H458 L516 290 Z" fill="#e6e6e6" stroke="#000" stroke-width="4"/>
+    <g class="iron">
+      <path d="M150 60 L415 270" stroke="#555" stroke-width="30" stroke-linecap="round"/>
+      <path d="M380 243 L434 286" stroke="#c0c0c0" stroke-width="16" stroke-linecap="round"/>
+      <text x="120" y="130" font-size="28" font-weight="800" text-anchor="middle">1. iron</text>
+    </g>
+    <g class="solder">
+      <path d="M760 60 L482 282" stroke="#9a9a9a" stroke-width="9" stroke-linecap="round"/>
+      <text x="790" y="130" font-size="28" font-weight="800" text-anchor="middle">2. solder</text>
+    </g>
+    <text x="450" y="440" font-size="28" font-weight="800" text-anchor="middle">3. a small shiny cone</text>
+  </svg>`;
+}
+
+function sceneCraftWires() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Four jumper wires on the pin strip: yellow on the top pin, then white, red and black. The bottom two pins stay empty.">
+    ${craft({ i2cLabels: true })}${headerStrip()}
+    ${jumper('yellow', 0, 'jw n1', '1')}${jumper('white', 1, 'jw n2', '2')}${jumper('red', 2, 'jw n3', '3')}${jumper('black', 3, 'jw n4', '4')}
+    <text x="820" y="390" font-size="24" font-weight="800" fill="#555" text-anchor="middle">bottom two</text>
+    <text x="820" y="418" font-size="24" font-weight="800" fill="#555" text-anchor="middle">stay empty</text>
+    <text x="828" y="150" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">top pin</text>
+  </svg>`;
+}
+
+function sceneCut() {
+  const cols = ['black', 'red', 'blue', 'yellow'];
+  const Y = k => 186 + k * 32;
+  let stubs = '', wires = '', pins = '';
+  cols.forEach((c, k) => {
+    const f = COL[c].fill;
+    const o = LIGHT(c) ? `<path d="M244 ${Y(k)} H690" stroke="#000" stroke-width="16" fill="none"/>` : '';
+    stubs += `${LIGHT(c) ? `<path d="M166 ${Y(k)} H216" stroke="#000" stroke-width="16" fill="none"/>` : ''}
+              <path d="M166 ${Y(k)} H216" stroke="${f}" stroke-width="10" fill="none"/>`;
+    wires += `${o}<path d="M244 ${Y(k)} H690" stroke="${f}" stroke-width="10" fill="none"/>`;
+    pins += `<rect x="760" y="${Y(k) - 4}" width="70" height="8" fill="#9a9a9a" stroke="#000" stroke-width="2"/>
+             <rect x="686" y="${Y(k) - 12}" width="78" height="24" rx="4" fill="${f}" stroke="#000" stroke-width="4"/>`;
+  });
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="A Trill cable: a small plug on the left, four wires, and four loose pins on the right. Cut close to the plug and keep the end with the pins.">
+    <g class="cutoff">
+      <rect x="96" y="160" width="72" height="148" rx="8" fill="#eee" stroke="#000" stroke-width="5"/>
+      ${stubs}
+    </g>
+    ${wires}${pins}
+    <path class="pulse" d="M230 120 V350" stroke="#ff5a00" stroke-width="8" stroke-dasharray="14 10" fill="none"/>
+    <text x="230" y="98" font-size="30" font-weight="800" fill="#ff5a00" text-anchor="middle">cut here</text>
+    <text x="132" y="392" font-size="26" font-weight="800" text-anchor="middle">small plug</text>
+    <text x="132" y="424" font-size="24" font-weight="700" fill="#555" text-anchor="middle">not needed</text>
+    <text x="750" y="392" font-size="26" font-weight="800" text-anchor="middle">four pins</text>
+    <text x="750" y="424" font-size="24" font-weight="700" fill="#555" text-anchor="middle">keep this end</text>
+    <text x="450" y="98" font-size="24" font-weight="700" fill="#555" text-anchor="middle">then bare each wire end</text>
+  </svg>`;
+}
+
+function sceneBar(touch) {
+  const cols = ['red', 'black', 'blue', 'yellow'];
+  const Y = k => 150 + k * 46;
+  let wires = '';
+  cols.forEach((c, k) => {
+    const f = COL[c].fill, d = `M612 235 C680 235, 660 ${Y(k)}, 720 ${Y(k)} H770`;
+    wires += `${LIGHT(c) ? `<path d="${d}" stroke="#000" stroke-width="16" fill="none"/>` : ''}
+      <path d="${d}" stroke="${f}" stroke-width="10" fill="none"/>
+      <rect x="836" y="${Y(k) - 4}" width="54" height="8" fill="#9a9a9a" stroke="#000" stroke-width="2"/>
+      <rect x="766" y="${Y(k) - 13}" width="72" height="26" rx="4" fill="${f}" stroke="#000" stroke-width="4"/>`;
+  });
+  const finger = touch ? `
+    <g class="note"><text x="330" y="120" font-size="80" font-weight="800" fill="#ff5a00">&#9835;</text></g>
+    <g class="slide"><g transform="translate(-420 62)">
+      <path d="M568 -60 C568 -80, 608 -80, 608 -60 V128 C608 152, 568 152, 568 128 Z" fill="#f2c9a5" stroke="#000" stroke-width="5"/>
+      <path d="M574 112 C580 102, 596 102, 602 112" fill="none" stroke="#000" stroke-width="3"/>
+    </g></g>` : '';
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="The Trill Bar, a long thin sensor. Its cable plugs into one end and finishes in four loose pins: red, black, blue and yellow.">
+    <rect x="50" y="200" width="540" height="70" rx="14" fill="#111" stroke="#000" stroke-width="5"/>
+    <text x="320" y="246" font-size="30" font-weight="800" fill="#fff" text-anchor="middle">TRILL BAR</text>
+    <rect x="584" y="212" width="30" height="46" rx="5" fill="#eee" stroke="#000" stroke-width="4"/>
+    ${wires}${finger}
+    <text x="600" y="330" font-size="24" font-weight="800" text-anchor="middle">small plug</text>
+    <text x="600" y="360" font-size="24" font-weight="700" fill="#555" text-anchor="middle">clicks into the Bar</text>
+    <text x="800" y="360" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">four pins</text>
+    <text x="800" y="392" font-size="24" font-weight="700" fill="#555" text-anchor="middle">go in the Flipper</text>
+  </svg>`;
+}
+
+function sceneTail() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Four wires soldered into the holes on the flat end of the Craft: yellow in the top hole, then blue, red and black. The bottom two holes stay empty.">
+    ${craft({ i2cLabels: true })}
+    ${link(true)}
+    <text x="820" y="390" font-size="24" font-weight="800" fill="#555" text-anchor="middle">bottom two</text>
+    <text x="820" y="418" font-size="24" font-weight="800" fill="#555" text-anchor="middle">stay empty</text>
+    <text x="828" y="150" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">top hole</text>
+  </svg>`;
+}
+
+function sceneTouch() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Touch a gold pad on the Craft and a note plays.">
+    ${craft({})}${link()}
+    <g class="note"><text x="500" y="96" font-size="80" font-weight="800" fill="#ff5a00">&#9835;</text></g>
+    <g class="tap">
+      <path d="M568 -60 C568 -80, 608 -80, 608 -60 V128 C608 152, 568 152, 568 128 Z" fill="#f2c9a5" stroke="#000" stroke-width="5"/>
+      <path d="M574 112 C580 102, 596 102, 602 112" fill="none" stroke="#000" stroke-width="3"/>
+    </g>
+  </svg>`;
+}
+
+function sceneLimbs() {
+  const rods = [0, 1, 2, 3, 4, 5, 6, 7].map(n =>
+    `<path class="limb" style="animation-delay:${n * 0.6}s" d="M${PADX(n)} 150 V76" stroke="#c77b00" stroke-width="7" fill="none"/>
+     <rect x="${PADX(n) - 9}" y="10" width="18" height="70" rx="6" fill="#d4af37" stroke="#000" stroke-width="3"/>`).join('');
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Wires run from pads 0 to 7, along the top edge from the flat end, to eight pieces of metal.">
+    ${rods}
+    ${craft({ noTop: true })}
+    <text x="672" y="112" font-size="26" font-weight="800" text-anchor="start">pad 0</text>
+    <text x="414" y="112" font-size="26" font-weight="800" text-anchor="end">pad 7</text>
+    <path d="M${PADX(7) - 14} 176 V190 H${PADX(0) + 14} V176" fill="none" stroke="#ff5a00" stroke-width="6"/>
+    <text x="${(PADX(7) + PADX(0)) / 2}" y="222" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">pads 0 to 7</text>
+    <text x="250" y="60" font-size="26" font-weight="800" text-anchor="middle">pieces of metal</text>
+  </svg>`;
+}
+
+/* ---------- the Flipper, front view ---------- */
+function flipperBody(extra, scaled) {
+  let holes = '';
+  for (let i = 0; i < 8; i++)  holes += `<rect x="${179 + i*28}" y="176" width="20" height="20" rx="3" fill="#111"/>`;
+  for (let i = 0; i < 10; i++) holes += `<rect x="${491 + i*27}" y="176" width="20" height="20" rx="3" fill="#111"/>`;
+  return `
+    <path d="M70 170 H830 L860 205 V385 L830 420 H70 L40 385 V205 Z" fill="#f4f4f4" stroke="#000" stroke-width="5"/>
+    <rect x="70" y="170" width="760" height="32" fill="#dcdcdc" stroke="#000" stroke-width="3"/>
+    ${holes}
+    <rect x="150" y="228" width="370" height="165" rx="10" fill="#1d1d1d"/>
+    <text x="335" y="322" font-size="${scaled ? 38 : 30}" font-weight="800" fill="#fff" text-anchor="middle">screen</text>
+    <circle cx="659" cy="312" r="78" fill="#fff" stroke="#000" stroke-width="5"/>
+    <circle cx="659" cy="312" r="26" fill="#fff" stroke="#000" stroke-width="4"/>
+    <circle cx="790" cy="336" r="28" fill="#fff" stroke="#000" stroke-width="5"/>
+    ${extra || ''}`;
+}
+
+function sceneFind() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="The Flipper from the front. The group of ten holes is on the right, above the round pad.">
+    ${flipperBody()}
+    <text x="287" y="52" font-size="26" font-weight="800" fill="#555" text-anchor="middle">8 holes</text>
+    <text x="287" y="84" font-size="26" font-weight="800" fill="#555" text-anchor="middle">leave empty</text>
+    <path d="M175 150 V132 H399 V150" fill="none" stroke="#777" stroke-width="5"/>
+    <text x="625" y="46" font-size="32" font-weight="800" fill="#ff5a00" text-anchor="middle">10 holes: use these</text>
+    <g class="bob"><path d="M625 62 V116 M603 96 L625 120 L647 96" fill="none" stroke="#ff5a00" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <rect class="pulse" x="481" y="166" width="283" height="40" rx="8" fill="none" stroke="#ff5a00" stroke-width="8"/>
+    <text x="659" y="452" font-size="26" font-weight="800" text-anchor="middle">round pad</text>
+  </svg>`;
+}
+
+function sceneSafe() {
+  const extra = `
+    <circle class="pulse" cx="790" cy="336" r="40" fill="none" stroke="#ff5a00" stroke-width="9"/>
+    <g class="unplug">
+      <rect x="862" y="282" width="46" height="36" rx="6" fill="#999" stroke="#000" stroke-width="4"/>
+      <rect x="906" y="272" width="70" height="56" rx="10" fill="#000"/>
+      <path d="M976 300 H1100" stroke="#000" stroke-width="14" fill="none"/>
+    </g>`;
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Press the Back button, then pull out the USB cable.">
+    <g transform="translate(0 60) scale(0.78)">${flipperBody(extra, true)}</g>
+    <text x="616" y="60" font-size="28" font-weight="800" fill="#ff5a00" text-anchor="middle">1. Back</text>
+    <path d="M616 72 V284" stroke="#ff5a00" stroke-width="6" stroke-dasharray="10 8"/>
+    <text x="640" y="440" font-size="28" font-weight="800" text-anchor="middle">2. Pull the USB cable out</text>
+  </svg>`;
+}
+
+/* ---------- close-up of the Flipper's group of ten ---------- */
+const HX = i => 60 + i * 80;
+
+function wireSvg(color, i, cls) {
+  const x = HX(i), c = COL[color].fill;
+  const outline = LIGHT(color)
+    ? `<path d="M${x + 29} 136 V-200" stroke="#000" stroke-width="18" fill="none"/>` : '';
+  return `<g class="wire ${cls || ''}" data-wire="${color}">
+    ${outline}
+    <path d="M${x + 29} 136 V-200" stroke="${c}" stroke-width="12" fill="none"/>
+    <rect x="${x + 24}" y="212" width="10" height="52" fill="#9a9a9a" stroke="#000" stroke-width="2"/>
+    <rect x="${x + 9}" y="132" width="40" height="84" rx="7" fill="${c}" stroke="#000" stroke-width="5"/>
+  </g>`;
+}
+
+function sceneClose(placed, active, check) {
+  let holes = '', nums = '';
+  for (let i = 0; i < 10; i++) {
+    holes += `<rect x="${HX(i)}" y="252" width="58" height="58" rx="8" fill="#111"/>
+      <rect data-ring="${i}" x="${HX(i) - 7}" y="245" width="72" height="72" rx="12" fill="none" stroke="#ff5a00" stroke-width="8" opacity="0"/>`;
+    nums += `<text x="${HX(i) + 29}" y="372" font-size="30" font-weight="800" text-anchor="middle">${9 + i}</text>`;
+  }
+  let bubbles = '';
+  for (let i = 0; i < 10; i++) {
+    bubbles += `<g data-bubble="${i}" opacity="0"><circle cx="${HX(i) + 29}" cy="200" r="30" fill="#ff5a00"/>
+      <text data-bubble-n="${i}" x="${HX(i) + 29}" y="212" font-size="34" font-weight="800" fill="#fff" text-anchor="middle"></text></g>`;
+  }
+  let wires = placed.map(c => wireSvg(c, HOLE[c])).join('');
+  if (active) wires += wireSvg(active.color, HOLE[active.color], 'active');
+  let marks = '';
+  if (check) {
+    const span = (a, b, n) => `<path d="M${HX(a) + 4} 400 V414 H${HX(b) + 54} V400" fill="none" stroke="#000" stroke-width="4"/>
+      <text x="${(HX(a) + HX(b) + 58) / 2}" y="452" font-size="30" font-weight="800" text-anchor="middle">${n}</text>
+      <text x="${(HX(a) + HX(b) + 58) / 2}" y="480" font-size="22" font-weight="700" text-anchor="middle">empty</text>`;
+    marks = span(1, 1, 1) + span(3, 5, 3) + span(8, 9, 2);
+  }
+  const label = active ? `Close-up of the ten holes. ${COL[active.color].name} goes in hole ${9 + HOLE[active.color]}.`
+                       : 'Close-up of the ten holes with all four wires in place.';
+  return `<svg viewBox="0 0 900 ${check ? 500 : 560}" role="img" aria-label="${label}">
+    <rect x="-10" y="238" width="920" height="400" fill="#f4f4f4" stroke="#000" stroke-width="5"/>
+    <rect x="-10" y="238" width="920" height="88" fill="#dcdcdc" stroke="#000" stroke-width="3"/>
+    <path d="M6 281 H50" stroke="#555" stroke-width="4" stroke-dasharray="7 6"/>
+    <text x="28" y="372" font-size="24" font-weight="800" fill="#555" text-anchor="middle">gap</text>
+    ${holes}${nums}
+    ${check ? marks : `
+      <rect x="-10" y="400" width="200" height="200" fill="#1d1d1d"/>
+      <text x="92" y="460" font-size="26" font-weight="800" fill="#fff" text-anchor="middle">screen</text>
+      <circle cx="593" cy="690" r="273" fill="#fff" stroke="#000" stroke-width="5"/>
+      <text x="593" y="480" font-size="26" font-weight="800" text-anchor="middle">round pad</text>`}
+    ${wires}${bubbles}
+  </svg>`;
+}
+
+/* ---------- close-up animation: count the holes, then drop the wire ---------- */
+let runToken = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function animateClose(root, active) {
+  const my = ++runToken;
+  const wire = root.querySelector('.wire.active');
+  const target = HOLE[active.color];
+  const seq = [];
+  for (let k = 0; k < active.n; k++) seq.push(active.from === 'gap' ? k : 9 - k);
+  const ring = i => root.querySelector(`[data-ring="${i}"]`);
+  const bubble = i => root.querySelector(`[data-bubble="${i}"]`);
+  const label = i => root.querySelector(`[data-bubble-n="${i}"]`);
+  const reset = () => {
+    for (let i = 0; i < 10; i++) { ring(i).setAttribute('opacity', 0); bubble(i).setAttribute('opacity', 0); }
+  };
+
+  if (STILL) {
+    seq.forEach((i, k) => { if (i !== target) { label(i).textContent = k + 1; bubble(i).setAttribute('opacity', 1); } });
+    ring(target).setAttribute('opacity', 1);
+    return;
+  }
+  while (my === runToken) {
+    reset();
+    wire.style.transition = 'none';
+    wire.style.transform = 'translateY(-120px)';
+    await sleep(500); if (my !== runToken) return;
+    for (let k = 0; k < seq.length; k++) {
+      label(seq[k]).textContent = k + 1;
+      bubble(seq[k]).setAttribute('opacity', 1);
+      ring(seq[k]).setAttribute('opacity', 1);
+      await sleep(750); if (my !== runToken) return;
+      if (k < seq.length - 1) ring(seq[k]).setAttribute('opacity', 0);
+    }
+    await sleep(350); if (my !== runToken) return;
+    for (let i = 0; i < 10; i++) bubble(i).setAttribute('opacity', 0);
+    wire.style.transition = '';
+    wire.style.transform = 'translateY(0)';
+    await sleep(3400); if (my !== runToken) return;
+  }
+}
+
+/* ---------- the sounds the app makes ---------- */
+let audio;
+function tone(freq, start, dur, vol) {
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'square'; o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g); g.connect(audio.destination);
+  o.start(audio.currentTime + start); o.stop(audio.currentTime + start + dur);
+}
+function play(kind) {
+  audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+  audio.resume();
+  if (kind === 'found') { tone(523.25, 0, .07, .12); tone(659.26, .07, .07, .12); tone(783.99, .14, .11, .12); }
+  if (kind === 'search') { for (let i = 0; i < 3; i++) tone(330, i * 2, .035, .06); }
+  if (kind === 'touch') { tone(523.25, 0, .5, .12); }
+}
+
+/* ---------- the steps ---------- */
+function buildSteps() {
+  const cable = ROUTE === 'cable';
+  const scl = SCLC(), Scl = scl[0].toUpperCase() + scl.slice(1);
+  const sda = SDAC(), Sda = sda[0].toUpperCase() + sda.slice(1);
+  const chooser = `<button class="route ${cable ? '' : 'on'}" type="button" data-route="jumper">I have jumper wires<small>Socket on one end, pin on the other. Ask the library desk first: many maker spaces keep them.</small></button>
+    <button class="route ${cable ? 'on' : ''}" type="button" data-route="cable">No jumper wires: use a Trill cable<small>Cut the plug off one spare cable and solder its four wires to the Craft. It cannot be undone.</small></button>`;
+
+  const first = cable
+    ? { title: 'Today: three small jobs',
+        text: `<p>The Craft arrived as a bare board. Nothing plugs into it yet.</p>
+               <ol><li>Cut the plug off one spare Trill cable and solder its four wires onto the Craft.</li>
+                   <li>Push the cable's four pins into the Flipper.</li>
+                   <li>Solder a wire from each touch pad to a piece of metal.</li></ol>
+               <p class="key">Test after each job. The Flipper's sounds tell you if it worked.</p>
+               <p>Pick how you will join the Craft to the Flipper:</p>`,
+        scene: scenePlan, extra: chooser }
+    : { title: 'Today: three small jobs',
+        text: `<p>The Craft arrived as a bare board. Nothing plugs into it yet.</p>
+               <ol><li>Solder the small six-pin strip onto the Craft.</li>
+                   <li>Join the Craft to the Flipper with four jumper wires.</li>
+                   <li>Solder a wire from each touch pad to a piece of metal.</li></ol>
+               <p class="key">Test after each job. The Flipper's sounds tell you if it worked.</p>
+               <p>Pick how you will join the Craft to the Flipper:</p>`,
+        scene: scenePlan, extra: chooser };
+
+  const join = cable ? [
+    { title: 'Job 1: cut one cable',
+      text: `<p>Take one spare Trill cable. Keep one cable for the Bar, and one for the Hex that goes back to Bela.</p>
+             <p>One end has a small plug. The other end has four loose pins.</p>
+             <p class="key">Cut the plug off, close to the plug. Keep the end with the four pins.</p>
+             <p>Then bare the last half centimetre of each wire. Ask the staff for wire strippers. Twist each bare end so no strands stick out.</p>
+             <p>Your cables are red, black, blue and yellow. If one has a white wire, tell Claude before you cut it.</p>
+             <p class="warn">This cannot be undone. That cable will no longer plug into a sensor.</p>`,
+      scene: sceneCut },
+    { title: 'Four wires into the Craft',
+      text: `<p>Lay the Craft with the black chip facing up and the flat end pointing right.</p>
+             <p class="key">Push one bare end down through each hole on the flat end, counting from the top:</p>
+             <ol><li>Top hole: yellow.</li><li>Second hole: blue.</li><li>Third hole: red.</li><li>Fourth hole: black.</li></ol>
+             <p>The bottom two holes stay empty. The six-pin strip is not used.</p>
+             <p>Tape the four wires down onto the board so they cannot slide out. Then turn the board over.</p>
+             <p class="warn">Red in the third hole, black in the fourth. Swapped power can damage the Craft.</p>`,
+      scene: sceneTail },
+    { title: 'Solder the four wires',
+      text: `<p>Each bare wire pokes out of a small metal ring on the back. Solder joins them.</p>
+             <ol><li>Touch the iron to the wire and the ring together. Count to two.</li>
+                 <li>Feed solder into the joint, not onto the iron.</li>
+                 <li>Take the solder away, then the iron.</li></ol>
+             <p class="key">A good joint is a small shiny cone. Do all four.</p>
+             <p>Snip off any wire that sticks up past the cone. No two joints may touch.</p>
+             <p class="warn">The iron is very hot. Ask the library staff to watch your first joint.</p>`,
+      scene: () => sceneJoint('wire') },
+  ] : [
+    { title: 'Job 1: fit the pin strip',
+      text: `<p>Lay the Craft with the black chip facing up and the flat end pointing right.</p>
+             <p>The six holes on the flat end are for the pin strip.</p>
+             <p class="key">Push the short legs of the strip down through the six holes.</p>
+             <p>The long legs should point away from the board, to the right.</p>
+             <p>Hold the strip in place with tape or sticky putty. Then turn the board over.</p>`,
+      scene: sceneHeader },
+    { title: 'Solder the six legs',
+      text: `<p>Each short leg pokes out of a small metal ring on the back. Solder joins them.</p>
+             <ol><li>Touch the iron to the leg and the ring together. Count to two.</li>
+                 <li>Feed solder into the joint, not onto the iron.</li>
+                 <li>Take the solder away, then the iron.</li></ol>
+             <p class="key">A good joint is a small shiny cone. Do all six.</p>
+             <p class="warn">The iron is very hot. Ask the library staff to watch your first joint.</p>`,
+      scene: () => sceneJoint('leg') },
+    { title: 'Four wires onto the Craft',
+      text: `<p>Turn the board back over: chip up, flat end pointing right.</p>
+             <p>Use jumper wires with a socket on one end and a pin on the other. Pick yellow, white, red and black.</p>
+             <p class="key">Push one socket onto each pin, counting from the top:</p>
+             <ol><li>Top pin: yellow.</li><li>Second pin: white.</li><li>Third pin: red.</li><li>Fourth pin: black.</li></ol>
+             <p>The bottom two pins stay empty.</p>
+             <p class="warn">Red on the third pin, black on the fourth. Swapped power can damage the Craft.</p>`,
+      scene: sceneCraftWires },
+  ];
+
+  const bar = ROUTE === 'bar';
+  const flipper = [
+  { title: 'Make the Flipper safe',
+    text: `<p class="key">1. Press the Back button to close the Creature app.</p>
+           <p>Back is the small round button on the far right.</p>
+           <p class="key">2. Pull the USB cable out of the Flipper.</p>
+           <p>Do this every time before you plug or unplug a wire.</p>`,
+    scene: sceneSafe },
+  { title: 'Find the right holes',
+    text: `<p>Hold the Flipper with the screen facing you.</p>
+           <p>Along the top edge is a row of small holes, in two groups with a gap between.</p>
+           <p class="key">Use the group of ten, on the right, above the round pad.</p>
+           <p>Leave the group of eight, above the screen, empty.</p>`,
+    scene: sceneFind },
+  { title: 'Red wire: power',
+    text: `<p>Find the gap between the two groups.</p>
+           <p class="key">Red goes in the first hole to the right of the gap.</p>
+           <p>Push the pin straight down until it stops. It will stay in by itself.</p>`,
+    scene: () => sceneClose([], { color: 'red' }),
+    active: { color: 'red', from: 'gap', n: 1 } },
+  { title: 'Black wire: ground',
+    text: `<p>Start at the gap again and count three holes to the right.</p>
+           <p class="key">Black goes in the third hole.</p>
+           <p>One empty hole sits between red and black.</p>`,
+    scene: () => sceneClose(['red'], { color: 'black' }),
+    active: { color: 'black', from: 'gap', n: 3 } },
+  { title: `${Sda} wire: data`,
+    text: `<p>Now count from the other end of the row, the far right.</p>
+           <p class="key">${Sda} goes in the fourth hole from the right-hand end.</p>`,
+    scene: () => sceneClose(['red', 'black'], { color: sda }),
+    active: { color: sda, from: 'right', n: 4 } },
+  { title: `${Scl} wire: clock`,
+    text: `<p>Count from the right-hand end again.</p>
+           <p class="key">${Scl} goes in the third hole, right beside ${sda}.</p>`,
+    scene: () => sceneClose(['red', 'black', sda], { color: scl }),
+    active: { color: scl, from: 'right', n: 3 } },
+  { title: 'Check with your fingertips',
+    text: `<p>Run a finger along the ten holes, left to right. You should feel:</p>
+           <ol><li>Red, then one empty hole, then black.</li>
+               <li>Three empty holes.</li>
+               <li>${Sda} and ${scl}, side by side.</li>
+               <li>Two empty holes at the end.</li></ol>`,
+    scene: () => sceneClose(['red', 'black', sda, scl], null, true) },
+  ];
+  const wake =
+  { title: 'Wake the creature',
+    text: `<p class="key">On the Flipper, open Apps, then GPIO, then Creature.</p>
+           <p>Now listen. The sound tells you what happened. Press a button below to hear each one.</p>`,
+    scene: null,
+    extra: `<button class="sound" type="button" data-play="found">&#9654; Three rising notes<small>It worked. The Flipper found the ${bar ? 'Bar' : 'Craft'}. Keep your hands off for one second.</small></button>
+            <button class="sound" type="button" data-play="search">&#9654; A quiet blip every two seconds<small>Still searching. Go to the last step, "If it only blips".</small></button>` };
+
+  if (bar) return [
+  { title: 'Home test: no soldering',
+    text: `<p>This takes two minutes. It proves the Flipper can talk to a Trill sensor before you go to the library.</p>
+           <p>You need the Flipper, the Trill Bar, and the Bar's cable.</p>
+           <p class="key">Push the cable's small plug into the end of the Bar until it clicks.</p>
+           <p>The other end of the cable has four loose pins: red, black, blue and yellow.</p>
+           <p>Blue is the data wire. Yellow is the clock wire.</p>`,
+    scene: () => sceneBar(false) },
+  ...flipper, wake,
+  { title: 'Slide a finger along the Bar',
+    text: `<p class="key">Touch the Bar and slide your finger from one end to the other.</p>
+           <p>You will hear a note and feel a short buzz. The note changes as your finger moves.</p>
+           <p>That is the whole test. The Flipper side works, and no resistors are needed.</p>
+           <p>Press Back to close the app, then pull the four pins out of the Flipper.</p>`,
+    scene: () => sceneBar(true),
+    extra: `<button class="sound" type="button" data-play="touch">&#9654; What a touch sounds like</button>
+            <button class="sound" type="button" onclick="location.href='guide.html'">Next: the library guide<small>Soldering the Craft, step by step.</small></button>` },
+  { title: 'If it only blips',
+    text: `<ol><li>Press Back to close the app.</li>
+               <li>Push the small plug firmly into the Bar.</li>
+               <li>On the Flipper: red first after the gap, black third.</li>
+               <li>Swap blue and yellow on the Flipper, then open Creature again.</li></ol>
+           <p class="key">Still blipping? Then the Flipper needs two small resistors. Tell Claude before you go.</p>`,
+    scene: null },
+  ];
+
+  return [first, ...join, ...flipper, wake,
+  { title: 'Touch a bare pad',
+    text: `<p class="key">Touch one of the gold holes along a long edge of the Craft.</p>
+           <p>You will hear a note and feel a short buzz. Each pad plays a different note.</p>
+           <p>Job 2 is done. The Craft and the Flipper are talking.</p>`,
+    scene: sceneTouch,
+    extra: `<button class="sound" type="button" data-play="touch">&#9654; What a touch sounds like</button>` },
+  { title: 'Job 3: add the limbs',
+    text: `<p>${cable ? 'Close the app and pull the four pins out of the Flipper before you solder.'
+                      : 'Close the app and pull the four wires off the Craft before you solder.'}</p>
+           <p>Pads 0 to 7 play the first eight notes. They run along the top edge, starting at the flat end.</p>
+           <ol><li>Solder one end of a wire into pad 0.</li>
+               <li>Solder the other end to your first piece of metal.</li>
+               <li>Put the four ${cable ? 'pins' : 'wires'} back, open Creature, and press OK with your hands off.</li>
+               <li>Touch the metal. Hear a note? Do the next pad.</li></ol>
+           <p class="key">Brass and copper take solder. Steel does not.</p>`,
+    scene: sceneLimbs },
+  { title: 'If it only blips',
+    text: `<ol><li>Press Back to close the app.</li>
+               <li>On the Craft: ${scl}, ${sda}, red, black, from the top ${cable ? 'hole' : 'pin'} down.</li>
+               <li>On the Flipper: red first after the gap, black third.</li>
+               <li>Swap ${sda} and ${scl} on the Flipper, then open Creature again.</li>
+               <li>Look at the ${cable ? 'four' : 'six'} solder joints. Reheat any that are dull or blobby.</li></ol>
+           <p class="key">Still blipping? It needs two small resistors. Tell Claude.</p>`,
+    scene: null },
+  ];
+}
+let STEPS = buildSteps();
+
+/* ---------- stepper ---------- */
+const $ = id => document.getElementById(id);
+let step = Math.min(Math.max(parseInt(params.get('step') || '1', 10) - 1, 0), STEPS.length - 1);
+let readAloud = false;
+try { readAloud = localStorage.getItem('pinmap-read') === '1'; } catch (e) {}
+
+function speak() {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  if (!readAloud) return;
+  const s = STEPS[step];
+  const tmp = document.createElement('div');
+  tmp.innerHTML = s.text;
+  speechSynthesis.speak(new SpeechSynthesisUtterance(s.title + '. ' + tmp.textContent.replace(/\s+/g, ' ')));
+}
+
+function render() {
+  const s = STEPS[step];
+  runToken++;
+  document.title = ROUTE === 'bar' ? 'Bar home test' : 'Craft to Flipper, step by step';
+  document.documentElement.classList.toggle('still', STILL);
+  $('progress').textContent = `Step ${step + 1} of ${STEPS.length}`;
+  $('dots').innerHTML = STEPS.map((_, i) => `<i class="${i < step ? 'done' : i === step ? 'now' : ''}"></i>`).join('');
+  $('title').textContent = s.title;
+  $('text').innerHTML = s.text;
+  $('scene').innerHTML = s.scene ? s.scene() : '';
+  $('scene').parentElement.style.display = s.scene ? '' : 'none';
+  $('extra').innerHTML = s.extra || '';
+  $('back').disabled = step === 0;
+  $('next').disabled = step === STEPS.length - 1;
+  $('speak').textContent = 'Read aloud: ' + (readAloud ? 'on' : 'off');
+  $('speak').classList.toggle('on', readAloud);
+  $('motion').textContent = 'Animation: ' + (STILL ? 'off' : 'on');
+  $('motion').classList.toggle('on', !STILL);
+  if (s.active) animateClose($('scene'), s.active);
+  window.scrollTo(0, 0);
+  speak();
+}
+
+function go(d) {
+  const n = step + d;
+  if (n < 0 || n >= STEPS.length) return;
+  step = n;
+  render();
+}
+
+$('back').addEventListener('click', () => go(-1));
+$('next').addEventListener('click', () => go(1));
+$('speak').addEventListener('click', () => {
+  readAloud = !readAloud;
+  try { localStorage.setItem('pinmap-read', readAloud ? '1' : '0'); } catch (e) {}
+  render();
+});
+$('motion').addEventListener('click', () => {
+  STILL = !STILL;
+  try { localStorage.setItem('pinmap-motion', STILL ? 'off' : 'on'); } catch (e) {}
+  render();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-play]');
+  if (b) play(b.dataset.play);
+  const r = e.target.closest('[data-route]');
+  if (r) {
+    ROUTE = r.dataset.route;
+    try { localStorage.setItem('guide-route', ROUTE); } catch (e2) {}
+    STEPS = buildSteps();
+    render();
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+
+render();
+</script>
+</body>
+</html>
