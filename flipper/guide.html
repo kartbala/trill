@@ -690,15 +690,22 @@ function buildSteps() {
            <p>Job 2 is done. The Craft and the Flipper are talking.</p>`,
     scene: sceneTouch,
     extra: `<button class="sound" type="button" data-play="touch">&#9654; What a touch sounds like</button>` },
+  { title: 'Get the Hubo wire ready',
+    text: `<p>You bought two kinds of wire at Hubo. One makes the leads, the other makes the limbs.</p>
+           <ol><li><b>Leads, from the white cord.</b> Nick the white outer jacket and peel it back. Inside are a blue wire and a brown wire. Cut eight pieces, about 20 cm each.</li>
+               <li>Bare 1 cm at both ends of each lead. The copper is many thin strands: twist each end tight, then melt a little solder into it so it stays together.</li>
+               <li><b>Limbs, from the black installation wire.</b> Strip off the black plastic. Inside is one stiff copper wire. Cut eight limbs, any length you like.</li></ol>
+           <p class="key">Your Griffon solder has flux inside. You need nothing else.</p>`,
+    scene: null },
   { title: 'Job 3: add the limbs',
     text: `<p>${cable ? 'Close the app and pull the four pins out of the Flipper before you solder.'
                       : 'Close the app and pull the four wires off the Craft before you solder.'}</p>
            <p>Pads 0 to 7 play the first eight notes. They run along the top edge, starting at the flat end.</p>
-           <ol><li>Solder one end of a wire into pad 0.</li>
-               <li>Solder the other end to your first piece of metal.</li>
+           <ol><li>Solder one end of a lead into pad 0.</li>
+               <li>Wrap the other end twice around your first copper limb, then solder it.</li>
                <li>Put the four ${cable ? 'pins' : 'wires'} back, open Creature, and press OK with your hands off.</li>
-               <li>Touch the metal. Hear a note? Do the next pad.</li></ol>
-           <p class="key">Brass and copper take solder. Steel does not.</p>`,
+               <li>Touch the limb. Hear a note? Do the next pad.</li></ol>
+           <p class="key">No two limbs may touch each other.</p>`,
     scene: sceneLimbs },
   { title: 'If it only blips',
     text: `<ol><li>Press Back to close the app.</li>
@@ -706,7 +713,7 @@ function buildSteps() {
                <li>On the Flipper: red first after the gap, black third.</li>
                <li>Swap ${sda} and ${scl} on the Flipper, then open Creature again.</li>
                <li>Look at the ${cable ? 'four' : 'six'} solder joints. Reheat any that are dull or blobby.</li></ol>
-           <p class="key">Still blipping? It needs two small resistors. Tell Claude.</p>`,
+           <p class="key">Still blipping? Tell Claude. Your Bar test proved the Flipper side works, so look at the Craft's joints first.</p>`,
     scene: null },
   ];
 }
