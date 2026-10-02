@@ -126,21 +126,34 @@ const COL = {
   white:  { fill:'#ffffff', name:'WHITE' },
   yellow: { fill:'#ffd400', name:'YELLOW' },
   blue:   { fill:'#1e6bff', name:'BLUE' },
+  // the 'leads' route: four home-made leads from the Hubo cord (blue and brown only), told apart by tape flags
+  pv:     { fill:'#8b4513', name:'The +V lead',  tag:'+V' },
+  gnd:    { fill:'#1e6bff', name:'The GND lead', tag:'GND' },
+  sdaL:   { fill:'#1e6bff', name:'The SDA lead', tag:'SDA' },
+  sclL:   { fill:'#8b4513', name:'The SCL lead', tag:'SCL' },
 };
 // Two ways to join the Craft to the Flipper:
 //   'jumper' = solder the six-pin strip, then four socket-to-pin jumper wires
 //   'cable'  = no jumper wires: cut the plug off one Trill cable and solder its four wires into the Craft
+//   'leads'  = no jumper wires and no cut cable: four leads from the white Hubo cord, each soldered to
+//              a pin snapped off the six-pin strip (KB, 2 Oct: he will not cut a Trill cable)
 //   'bar'    = the two-minute home test: Trill Bar and its own cable, no soldering (?route=bar only)
 // KB's Trill cables are red, black, blue, yellow (no white): blue = data (SDA), yellow = clock (SCL).
-// On the jumper route the data wire is white. The clock wire is yellow on every route.
+// On the jumper route the data wire is white. The clock wire is yellow on every cable route.
 let ROUTE = 'jumper';
-try { if (localStorage.getItem('guide-route') === 'cable') ROUTE = 'cable'; } catch (e) {}
-if (['cable', 'jumper', 'bar'].includes(params.get('route'))) ROUTE = params.get('route');
-const SCLC = () => 'yellow';
-const SDAC = () => ROUTE === 'jumper' ? 'white' : 'blue';
+try { if (['cable', 'leads'].includes(localStorage.getItem('guide-route'))) ROUTE = localStorage.getItem('guide-route'); } catch (e) {}
+if (['cable', 'jumper', 'leads', 'bar'].includes(params.get('route'))) ROUTE = params.get('route');
+const SCLC = () => ROUTE === 'leads' ? 'sclL' : 'yellow';
+const SDAC = () => ROUTE === 'leads' ? 'sdaL' : ROUTE === 'jumper' ? 'white' : 'blue';
+const PWRC = () => ROUTE === 'leads' ? 'pv' : 'red';
+const GNDC = () => ROUTE === 'leads' ? 'gnd' : 'black';
 const LIGHT = c => c === 'white' || c === 'yellow';   // needs a black outline on a white page
 // hole index inside the Flipper's group of ten: 0 = pin 9 ... 9 = pin 18
-const HOLE = { red:0, black:2, white:6, blue:6, yellow:7 };
+const HOLE = { red:0, black:2, white:6, blue:6, yellow:7, pv:0, gnd:2, sdaL:6, sclL:7 };
+// a tape flag with the lead's name, for the leads route
+const flag = (color, x, y) => COL[color].tag
+  ? `<rect x="${x - 36}" y="${y - 20}" width="72" height="36" rx="4" fill="#fff" stroke="#000" stroke-width="3"/>
+     <text x="${x}" y="${y + 7}" font-size="22" font-weight="800" text-anchor="middle">${COL[color].tag}</text>` : '';
 
 /* ---------- the Craft, drawn from the photo: chip side up, round end left, flat end right ---------- */
 const PADX = n => n <= 14 ? 650 - n * 31 : 216 + (n - 15) * 31;   // pads 0-14 top row, 15-29 bottom row
@@ -206,13 +219,15 @@ function tail(color, k, cls, num) {
     <circle cx="${I2CX}" cy="${y}" r="10" fill="#e6e6e6" stroke="#000" stroke-width="3"/>
     ${num ? `<circle cx="800" cy="${y}" r="15" fill="#fff" stroke="#000" stroke-width="4"/>
              <text x="800" y="${y + 8}" font-size="22" font-weight="800" text-anchor="middle">${num}</text>` : ''}
+    ${COL[color].tag ? `<rect x="826" y="${y - 14}" width="68" height="28" rx="4" fill="#fff" stroke="#000" stroke-width="3"/>
+             <text x="860" y="${y + 8}" font-size="22" font-weight="800" text-anchor="middle">${COL[color].tag}</text>` : ''}
   </g>`;
 }
 
 // the Craft's link to the Flipper, drawn for whichever route is chosen
 function link(animated) {
-  const cols = [SCLC(), SDAC(), 'red', 'black'];
-  if (ROUTE === 'cable') return cols.map((c, k) => tail(c, k, animated ? 'jw n' + (k + 1) : '', animated ? k + 1 : '')).join('');
+  const cols = [SCLC(), SDAC(), PWRC(), GNDC()];
+  if (ROUTE === 'cable' || ROUTE === 'leads') return cols.map((c, k) => tail(c, k, animated ? 'jw n' + (k + 1) : '', animated ? k + 1 : '')).join('');
   return headerStrip() + cols.map((c, k) => jumper(c, k, animated ? 'jw n' + (k + 1) : '', animated ? String(k + 1) : '')).join('');
 }
 
@@ -334,12 +349,60 @@ function sceneBar(touch) {
 }
 
 function sceneTail() {
-  return `<svg viewBox="0 0 900 470" role="img" aria-label="Four wires soldered into the holes on the flat end of the Craft: yellow in the top hole, then blue, red and black. The bottom two holes stay empty.">
+  const order = ROUTE === 'leads' ? 'SCL in the top hole, then SDA, +V and GND' : 'yellow in the top hole, then blue, red and black';
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Four wires soldered into the holes on the flat end of the Craft: ${order}. The bottom two holes stay empty.">
     ${craft({ i2cLabels: true })}
     ${link(true)}
     <text x="820" y="390" font-size="24" font-weight="800" fill="#555" text-anchor="middle">bottom two</text>
     <text x="820" y="418" font-size="24" font-weight="800" fill="#555" text-anchor="middle">stay empty</text>
     <text x="828" y="150" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">top hole</text>
+  </svg>`;
+}
+
+// leads route: snap four pins off the strip, and four cord leads with a pin on one end
+function sceneLeads() {
+  let strip = '';
+  for (let k = 0; k < 6; k++) {
+    const x = 120 + k * 40;
+    strip += `<rect x="${x - 4}" y="40" width="8" height="90" fill="#b9b9b9" stroke="#000" stroke-width="1.5"/>`;
+  }
+  strip += `<rect x="100" y="70" width="240" height="26" rx="3" fill="#222" stroke="#000" stroke-width="3"/>`;
+  const snaps = [1, 2, 3].map(k => `<path class="pulse" d="M${140 + k * 40} 56 V114" stroke="#ff5a00" stroke-width="6" stroke-dasharray="8 6"/>`).join('');
+  const cols = ['sclL', 'sdaL', 'pv', 'gnd'];
+  let leads = '';
+  cols.forEach((c, k) => {
+    const y = 220 + k * 62, f = COL[c].fill;
+    leads += `<path d="M150 ${y} H640" stroke="${f}" stroke-width="10" fill="none"/>
+      <rect x="120" y="${y - 5}" width="34" height="10" fill="#c0c0c0" stroke="#000" stroke-width="2"/>
+      <rect x="636" y="${y - 5}" width="40" height="10" fill="#c0c0c0" stroke="#000" stroke-width="2"/>
+      <rect x="672" y="${y - 15}" width="30" height="30" fill="#222" stroke="#000" stroke-width="3"/>
+      <rect x="700" y="${y - 4}" width="80" height="8" fill="#b9b9b9" stroke="#000" stroke-width="1.5"/>
+      ${flag(c, 400, y)}`;
+  });
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="Snap four single pins off the six-pin strip. Then four leads from the white cord, brown and blue, each with a pin soldered on one end and a tape flag: SCL, SDA, +V, GND.">
+    ${strip}${snaps}
+    <text x="560" y="78" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">snap the strip</text>
+    <text x="560" y="110" font-size="24" font-weight="700" fill="#555" text-anchor="middle">into single pins</text>
+    ${leads}
+    <text x="137" y="452" font-size="24" font-weight="800" text-anchor="middle">to the Craft</text>
+    <text x="736" y="452" font-size="24" font-weight="800" text-anchor="middle">pin: to the Flipper</text>
+  </svg>`;
+}
+
+// leads route: one tinned lead soldered onto the short leg of a single right-angle pin
+function sceneLeadPin() {
+  return `<svg viewBox="0 0 900 470" role="img" aria-label="A single pin from the strip: a black plastic block, a long leg pointing right and a short leg pointing down. The tinned lead lies along the short leg and is soldered to it, then taped over.">
+    <rect x="400" y="150" width="60" height="60" fill="#222" stroke="#000" stroke-width="4"/>
+    <rect x="458" y="174" width="300" height="12" fill="#b9b9b9" stroke="#000" stroke-width="2"/>
+    <rect x="424" y="208" width="12" height="120" fill="#b9b9b9" stroke="#000" stroke-width="2"/>
+    <path d="M60 420 C200 420, 300 400, 380 360 L430 330" stroke="#1e6bff" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M420 336 L432 262" stroke="#c0c0c0" stroke-width="8" stroke-linecap="round"/>
+    <ellipse class="pulse" cx="430" cy="300" rx="26" ry="46" fill="none" stroke="#ff5a00" stroke-width="6"/>
+    <text x="610" y="150" font-size="26" font-weight="800" text-anchor="middle">long leg</text>
+    <text x="610" y="236" font-size="24" font-weight="700" fill="#555" text-anchor="middle">goes into the Flipper</text>
+    <text x="640" y="310" font-size="26" font-weight="800" fill="#ff5a00" text-anchor="middle">short leg: solder here</text>
+    <text x="640" y="344" font-size="24" font-weight="700" fill="#555" text-anchor="middle">then tape over the joint</text>
+    <text x="150" y="390" font-size="24" font-weight="800" text-anchor="middle">tinned lead</text>
   </svg>`;
 }
 
@@ -427,6 +490,7 @@ function wireSvg(color, i, cls) {
     <path d="M${x + 29} 136 V-200" stroke="${c}" stroke-width="12" fill="none"/>
     <rect x="${x + 24}" y="212" width="10" height="52" fill="#9a9a9a" stroke="#000" stroke-width="2"/>
     <rect x="${x + 9}" y="132" width="40" height="84" rx="7" fill="${c}" stroke="#000" stroke-width="5"/>
+    ${flag(color, x + 29, 70)}
   </g>`;
 }
 
@@ -529,13 +593,27 @@ function play(kind) {
 
 /* ---------- the steps ---------- */
 function buildSteps() {
-  const cable = ROUTE === 'cable';
-  const scl = SCLC(), Scl = scl[0].toUpperCase() + scl.slice(1);
-  const sda = SDAC(), Sda = sda[0].toUpperCase() + sda.slice(1);
-  const chooser = `<button class="route ${cable ? '' : 'on'}" type="button" data-route="jumper">I have jumper wires<small>Socket on one end, pin on the other. Ask the library desk first: many maker spaces keep them.</small></button>
+  const cable = ROUTE === 'cable', leads = ROUTE === 'leads';
+  const pins = cable || leads;   // four loose pins go into the Flipper
+  const scl = SCLC(), sda = SDAC(), pwr = PWRC(), gnd = GNDC();
+  // how a wire is named in the text: a colour, or the lead's tape flag
+  const nm = c => COL[c].tag ? `the ${COL[c].tag} lead` : c;
+  const Nm = c => { const s = nm(c); return s[0].toUpperCase() + s.slice(1); };
+  const wireTitle = (c, role) => COL[c].tag ? `${COL[c].tag} lead: ${role}` : `${Nm(c)} wire: ${role}`;
+  const chooser = `<button class="route ${ROUTE === 'jumper' ? 'on' : ''}" type="button" data-route="jumper">I have jumper wires<small>Socket on one end, pin on the other. Ask the library desk first: many maker spaces keep them.</small></button>
+    <button class="route ${leads ? 'on' : ''}" type="button" data-route="leads">No jumper wires: make four leads<small>White cord from Hubo, plus four pins snapped off the six-pin strip. No Trill cable is cut.</small></button>
     <button class="route ${cable ? 'on' : ''}" type="button" data-route="cable">No jumper wires: use a Trill cable<small>Cut the plug off one spare cable and solder its four wires to the Craft. It cannot be undone.</small></button>`;
 
-  const first = cable
+  const first = leads
+    ? { title: 'Three small jobs',
+        text: `<p>The Craft arrived as a bare board. Nothing plugs into it yet.</p>
+               <ol><li>Make four leads from the white cord, each with a pin on one end, and solder them onto the Craft.</li>
+                   <li>Push the four pins into the Flipper.</li>
+                   <li>Solder a wire from each touch pad to a piece of metal.</li></ol>
+               <p class="key">No Trill cable is cut. Test after each job: the Flipper's sounds tell you if it worked.</p>
+               <p>Pick how you will join the Craft to the Flipper:</p>`,
+        scene: scenePlan, extra: chooser }
+    : cable
     ? { title: 'Today: three small jobs',
         text: `<p>The Craft arrived as a bare board. Nothing plugs into it yet.</p>
                <ol><li>Cut the plug off one spare Trill cable and solder its four wires onto the Craft.</li>
@@ -553,7 +631,41 @@ function buildSteps() {
                <p>Pick how you will join the Craft to the Flipper:</p>`,
         scene: scenePlan, extra: chooser };
 
-  const join = cable ? [
+  const join = leads ? [
+    { title: 'Job 1: make four leads',
+      text: `<p>You need the six-pin strip, the white cord, pliers or your fingers, and tape.</p>
+             <ol><li><b>Snap four single pins off the strip.</b> Bend the black plastic between two pins until it breaks. Do it three times.</li>
+                 <li><b>Cut two pieces of white cord, about 15 cm each.</b> Peel off the white jacket. Each piece gives you a brown wire and a blue wire: four leads.</li>
+                 <li>Bare 1 cm at both ends of each lead. Twist the strands tight, then melt a little solder into each end.</li>
+                 <li><b>Put a tape flag on each lead and write on it:</b> SCL on a brown, SDA on a blue, +V on the other brown, GND on the other blue.</li></ol>
+             <p class="key">The flags matter more than the colours: there are two browns and two blues.</p>`,
+      scene: sceneLeads },
+    { title: 'A pin on the end of each lead',
+      text: `<p>Each pin is bent like an L. The long leg goes into the Flipper. Solder the lead to the short leg.</p>
+             <ol><li>Tape the pin down to the table with the short leg sticking out.</li>
+                 <li>Lay the tinned end of the lead along the short leg.</li>
+                 <li>Touch the iron to both for two seconds. The solder on the lead melts onto the leg. Take the iron away and hold still while it sets.</li>
+                 <li>Tug gently. If it holds, wrap a little tape round the joint.</li></ol>
+             <p class="key">Tape every joint. SDA and SCL sit side by side in the Flipper, and bare metal must not touch.</p>
+             <p class="warn">Work on a tile or a board, with the iron in its stand. Unplug it when you stop.</p>`,
+      scene: sceneLeadPin },
+    { title: 'Four leads into the Craft',
+      text: `<p>Lay the Craft with the black chip facing up and the flat end pointing right.</p>
+             <p class="key">Push the free end of each lead down through a hole on the flat end, counting from the top:</p>
+             <ol><li>Top hole: SCL.</li><li>Second hole: SDA.</li><li>Third hole: +V.</li><li>Fourth hole: GND.</li></ol>
+             <p>The holes are labelled on the board, so check each flag against the label. The bottom two holes stay empty.</p>
+             <p>Tape the four leads down onto the board so they cannot slide out. Then turn the board over.</p>
+             <p class="warn">+V in the third hole, GND in the fourth. Swapped power can damage the Craft.</p>`,
+      scene: sceneTail },
+    { title: 'Solder the four leads',
+      text: `<p>Each bare end pokes out of a small metal ring on the back. Solder joins them.</p>
+             <ol><li>Touch the iron to the wire and the ring together. Count to two.</li>
+                 <li>Feed solder into the joint, not onto the iron.</li>
+                 <li>Take the solder away, then the iron.</li></ol>
+             <p class="key">A good joint is a small shiny cone. Do all four.</p>
+             <p>Snip off any strand that sticks up past the cone. No two joints may touch.</p>`,
+      scene: () => sceneJoint('wire') },
+  ] : cable ? [
     { title: 'Job 1: cut one cable',
       text: `<p>Take one spare Trill cable. Keep one cable for the Bar, and one for the Hex that goes back to Bela.</p>
              <p>One end has a small plug. The other end has four loose pins.</p>
@@ -619,35 +731,36 @@ function buildSteps() {
            <p class="key">Use the group of ten, on the right, above the round pad.</p>
            <p>Leave the group of eight, above the screen, empty.</p>`,
     scene: sceneFind },
-  { title: 'Red wire: power',
+  { title: wireTitle(pwr, 'power'),
     text: `<p>Find the gap between the two groups.</p>
-           <p class="key">Red goes in the first hole to the right of the gap.</p>
+           <p class="key">${Nm(pwr)} goes in the first hole to the right of the gap. That is pin 9.</p>
            <p>Push the pin straight down until it stops. It will stay in by itself.</p>`,
-    scene: () => sceneClose([], { color: 'red' }),
-    active: { color: 'red', from: 'gap', n: 1 } },
-  { title: 'Black wire: ground',
+    scene: () => sceneClose([], { color: pwr }),
+    active: { color: pwr, from: 'gap', n: 1 } },
+  { title: wireTitle(gnd, 'ground'),
     text: `<p>Start at the gap again and count three holes to the right.</p>
-           <p class="key">Black goes in the third hole.</p>
-           <p>One empty hole sits between red and black.</p>`,
-    scene: () => sceneClose(['red'], { color: 'black' }),
-    active: { color: 'black', from: 'gap', n: 3 } },
-  { title: `${Sda} wire: data`,
+           <p class="key">${Nm(gnd)} goes in the third hole. That is pin 11.</p>
+           <p>One empty hole sits between ${nm(pwr)} and ${nm(gnd)}.</p>`,
+    scene: () => sceneClose([pwr], { color: gnd }),
+    active: { color: gnd, from: 'gap', n: 3 } },
+  { title: wireTitle(sda, 'data'),
     text: `<p>Now count from the other end of the row, the far right.</p>
-           <p class="key">${Sda} goes in the fourth hole from the right-hand end.</p>`,
-    scene: () => sceneClose(['red', 'black'], { color: sda }),
+           <p class="key">${Nm(sda)} goes in the fourth hole from the right-hand end. That is pin 15.</p>`,
+    scene: () => sceneClose([pwr, gnd], { color: sda }),
     active: { color: sda, from: 'right', n: 4 } },
-  { title: `${Scl} wire: clock`,
+  { title: wireTitle(scl, 'clock'),
     text: `<p>Count from the right-hand end again.</p>
-           <p class="key">${Scl} goes in the third hole, right beside ${sda}.</p>`,
-    scene: () => sceneClose(['red', 'black', sda], { color: scl }),
+           <p class="key">${Nm(scl)} goes in the third hole, right beside ${nm(sda)}. That is pin 16.</p>
+           ${leads ? '<p>Check that the tape on these two joints keeps their metal apart.</p>' : ''}`,
+    scene: () => sceneClose([pwr, gnd, sda], { color: scl }),
     active: { color: scl, from: 'right', n: 3 } },
   { title: 'Check with your fingertips',
     text: `<p>Run a finger along the ten holes, left to right. You should feel:</p>
-           <ol><li>Red, then one empty hole, then black.</li>
+           <ol><li>${Nm(pwr)}, then one empty hole, then ${nm(gnd)}.</li>
                <li>Three empty holes.</li>
-               <li>${Sda} and ${scl}, side by side.</li>
+               <li>${Nm(sda)} and ${nm(scl)}, side by side.</li>
                <li>Two empty holes at the end.</li></ol>`,
-    scene: () => sceneClose(['red', 'black', sda, scl], null, true) },
+    scene: () => sceneClose([pwr, gnd, sda, scl], null, true) },
   ];
   const wake =
   { title: 'Wake the creature',
@@ -698,21 +811,22 @@ function buildSteps() {
            <p class="key">Your Griffon solder has flux inside. You need nothing else.</p>`,
     scene: null },
   { title: 'Job 3: add the limbs',
-    text: `<p>${cable ? 'Close the app and pull the four pins out of the Flipper before you solder.'
+    text: `<p>${pins ? 'Close the app and pull the four pins out of the Flipper before you solder.'
                       : 'Close the app and pull the four wires off the Craft before you solder.'}</p>
            <p>Pads 0 to 7 play the first eight notes. They run along the top edge, starting at the flat end.</p>
            <ol><li>Solder one end of a lead into pad 0.</li>
                <li>Wrap the other end twice around your first copper limb, then solder it.</li>
-               <li>Put the four ${cable ? 'pins' : 'wires'} back, open Creature, and press OK with your hands off.</li>
+               <li>Put the four ${pins ? 'pins' : 'wires'} back, open Creature, and press OK with your hands off.</li>
                <li>Touch the limb. Hear a note? Do the next pad.</li></ol>
            <p class="key">No two limbs may touch each other.</p>`,
     scene: sceneLimbs },
   { title: 'If it only blips',
     text: `<ol><li>Press Back to close the app.</li>
-               <li>On the Craft: ${scl}, ${sda}, red, black, from the top ${cable ? 'hole' : 'pin'} down.</li>
-               <li>On the Flipper: red first after the gap, black third.</li>
-               <li>Swap ${sda} and ${scl} on the Flipper, then open Creature again.</li>
-               <li>Look at the ${cable ? 'four' : 'six'} solder joints. Reheat any that are dull or blobby.</li></ol>
+               <li>On the Craft: ${leads ? 'SCL, SDA, +V, GND' : `${scl}, ${sda}, red, black`}, from the top ${pins ? 'hole' : 'pin'} down.</li>
+               <li>On the Flipper: ${nm(pwr)} first after the gap, ${nm(gnd)} third.</li>
+               <li>Swap ${nm(sda)} and ${nm(scl)} on the Flipper, then open Creature again.</li>
+               <li>Look at the ${leads ? 'eight solder joints, four on the Craft and four on the pins' : cable ? 'four solder joints' : 'six solder joints'}. Reheat any that are dull or blobby.</li>
+               ${leads ? '<li>Tug each pin gently. A pin that comes loose from its lead needs soldering again.</li>' : ''}</ol>
            <p class="key">Still blipping? Tell Claude. Your Bar test proved the Flipper side works, so look at the Craft's joints first.</p>`,
     scene: null },
   ];
